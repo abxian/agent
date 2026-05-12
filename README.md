@@ -1,23 +1,57 @@
 # 神仙监控 Agent
-  
-Agent of 神仙监控
 
-## Contributors
+这是神仙监控的 Agent 仓库，基于哪吒监控 Agent fork 改名。
 
-<!--GAMFC_DELIMITER--><a href="https://github.com/naiba" title="naiba"><img src="https://avatars.githubusercontent.com/u/29243953?v=4" width="50;" alt="naiba"/></a>
-<a href="https://github.com/uubulb" title="UUBulb"><img src="https://avatars.githubusercontent.com/u/35923940?v=4" width="50;" alt="UUBulb"/></a>
-<a href="https://github.com/funnyzak" title="Leon"><img src="https://avatars.githubusercontent.com/u/2562087?v=4" width="50;" alt="Leon"/></a>
-<a href="https://github.com/zhangnew" title="zhangnew"><img src="https://avatars.githubusercontent.com/u/9146834?v=4" width="50;" alt="zhangnew"/></a>
-<a href="https://github.com/AEnjoy" title="AEnjoy"><img src="https://avatars.githubusercontent.com/u/37976919?v=4" width="50;" alt="AEnjoy"/></a>
-<a href="https://github.com/wwng2333" title=":D"><img src="https://avatars.githubusercontent.com/u/17147265?v=4" width="50;" alt=":D"/></a>
-<a href="https://github.com/DarcJC" title="Darc Z."><img src="https://avatars.githubusercontent.com/u/53445798?v=4" width="50;" alt="Darc Z."/></a>
-<a href="https://github.com/geniucker-dev" title="Geniucker Zhu"><img src="https://avatars.githubusercontent.com/u/165345526?v=4" width="50;" alt="Geniucker Zhu"/></a>
-<a href="https://github.com/ChrisKimZHT" title="Haotian Zou"><img src="https://avatars.githubusercontent.com/u/49368462?v=4" width="50;" alt="Haotian Zou"/></a>
-<a href="https://github.com/yuanweize" title="IYUANWEIZE"><img src="https://avatars.githubusercontent.com/u/30067203?v=4" width="50;" alt="IYUANWEIZE"/></a>
-<a href="https://github.com/NewbieOrange" title="NewbieOrange"><img src="https://avatars.githubusercontent.com/u/7200314?v=4" width="50;" alt="NewbieOrange"/></a>
-<a href="https://github.com/elysia-best" title="Yinan Qin"><img src="https://avatars.githubusercontent.com/u/39023210?v=4" width="50;" alt="Yinan Qin"/></a>
-<a href="https://github.com/xream" title="xream"><img src="https://avatars.githubusercontent.com/u/1210282?v=4" width="50;" alt="xream"/></a>
-<a href="https://github.com/xykt" title="xykt"><img src="https://avatars.githubusercontent.com/u/152045469?v=4" width="50;" alt="xykt"/></a>
-<a href="https://github.com/matchch" title="卖女孩的小火柴"><img src="https://avatars.githubusercontent.com/u/44471469?v=4" width="50;" alt="卖女孩的小火柴"/></a>
-<a href="https://github.com/liuran001" title="baka"><img src="https://avatars.githubusercontent.com/u/32791471?v=4" width="50;" alt="baka"/></a>
-<a href="https://github.com/akiasprin" title="葉鲜森(KEVI_)"><img src="https://avatars.githubusercontent.com/u/25278728?v=4" width="50;" alt="葉鲜森(KEVI_)"/></a><!--GAMFC_DELIMITER_END-->
+## 本次改动
+
+- Go module 从 `github.com/nezhahq/agent` 改为 `github.com/shenxianhq/agent`。
+- Agent 二进制名从 `nezha-agent` 改为 `shenxian-agent`。
+- CLI 使用说明和系统服务描述改为“神仙监控 Agent”。
+- Proto 服务名从 `NezhaService` 改为 `ShenxianService`。
+- Proto 文件从 `proto/nezha.*` 改为 `proto/shenxian.*`。
+- 日志前缀改为 `SHENXIAN@...`。
+- 自更新默认 GitHub 仓库改为 `shenxianhq/agent`。
+- 安装仍兼容官方文档使用的环境变量：`NZ_SERVER`、`NZ_TLS`、`NZ_CLIENT_SECRET`、`NZ_UUID`。
+
+## 公开下载
+
+公开软件放在 dufs：
+
+```text
+http://114.80.36.225:15667/sxjc/releases/agent/
+```
+
+已上传：
+
+- `shenxian-agent-linux-amd64`
+- `shenxian-agent-linux-arm64`
+- `shenxian-agent-darwin-amd64`
+- `shenxian-agent-darwin-arm64`
+- `shenxian-agent-windows-amd64.exe`
+
+## 安装
+
+Linux/macOS：
+
+```sh
+curl -L http://114.80.36.225:15667/sxjc/agent-install.sh -o agent.sh && chmod +x agent.sh && env NZ_SERVER=dashboard.example.com:8008 NZ_TLS=false NZ_CLIENT_SECRET=EXAMPLE NZ_UUID=your_server_uuid ./agent.sh
+```
+
+Windows PowerShell：
+
+```powershell
+$env:NZ_SERVER="dashboard.example.com:8008";$env:NZ_TLS="false";$env:NZ_CLIENT_SECRET="EXAMPLE";$env:NZ_UUID="your_server_uuid";Invoke-WebRequest http://114.80.36.225:15667/sxjc/agent-install.ps1 -OutFile C:\install.ps1;powershell.exe C:\install.ps1
+```
+
+官方参考：https://nezha.wiki/guide/agent.html
+
+## 编译验证
+
+已验证：
+
+```sh
+go test -run '^$' ./...
+go build -o dist/shenxian-agent.exe ./cmd/agent
+```
+
+完整测试中的 Cloudflare 探测用例依赖外部网站响应，可能因网络环境失败。
