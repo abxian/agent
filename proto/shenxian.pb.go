@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.1
 // 	protoc        v5.28.3
-// source: proto/nezha.proto
+// source: proto/shenxian.proto
 
 package proto
 
@@ -41,7 +41,7 @@ type Host struct {
 func (x *Host) Reset() {
 	*x = Host{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[0]
+		mi := &file_proto_shenxian_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -54,7 +54,7 @@ func (x *Host) String() string {
 func (*Host) ProtoMessage() {}
 
 func (x *Host) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[0]
+	mi := &file_proto_shenxian_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -67,7 +67,7 @@ func (x *Host) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Host.ProtoReflect.Descriptor instead.
 func (*Host) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{0}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Host) GetPlatform() string {
@@ -174,7 +174,7 @@ type State struct {
 func (x *State) Reset() {
 	*x = State{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[1]
+		mi := &file_proto_shenxian_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -187,7 +187,7 @@ func (x *State) String() string {
 func (*State) ProtoMessage() {}
 
 func (x *State) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[1]
+	mi := &file_proto_shenxian_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -200,7 +200,7 @@ func (x *State) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use State.ProtoReflect.Descriptor instead.
 func (*State) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{1}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *State) GetCpu() float64 {
@@ -334,7 +334,7 @@ type State_SensorTemperature struct {
 func (x *State_SensorTemperature) Reset() {
 	*x = State_SensorTemperature{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[2]
+		mi := &file_proto_shenxian_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -347,7 +347,7 @@ func (x *State_SensorTemperature) String() string {
 func (*State_SensorTemperature) ProtoMessage() {}
 
 func (x *State_SensorTemperature) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[2]
+	mi := &file_proto_shenxian_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -360,7 +360,7 @@ func (x *State_SensorTemperature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use State_SensorTemperature.ProtoReflect.Descriptor instead.
 func (*State_SensorTemperature) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{2}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *State_SensorTemperature) GetName() string {
@@ -390,7 +390,7 @@ type Task struct {
 func (x *Task) Reset() {
 	*x = Task{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[3]
+		mi := &file_proto_shenxian_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -403,7 +403,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[3]
+	mi := &file_proto_shenxian_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -416,7 +416,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{3}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Task) GetId() uint64 {
@@ -455,7 +455,7 @@ type TaskResult struct {
 func (x *TaskResult) Reset() {
 	*x = TaskResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[4]
+		mi := &file_proto_shenxian_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -468,7 +468,7 @@ func (x *TaskResult) String() string {
 func (*TaskResult) ProtoMessage() {}
 
 func (x *TaskResult) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[4]
+	mi := &file_proto_shenxian_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,7 +481,7 @@ func (x *TaskResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskResult.ProtoReflect.Descriptor instead.
 func (*TaskResult) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{4}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TaskResult) GetId() uint64 {
@@ -530,7 +530,7 @@ type Receipt struct {
 func (x *Receipt) Reset() {
 	*x = Receipt{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[5]
+		mi := &file_proto_shenxian_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -543,7 +543,7 @@ func (x *Receipt) String() string {
 func (*Receipt) ProtoMessage() {}
 
 func (x *Receipt) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[5]
+	mi := &file_proto_shenxian_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -556,7 +556,7 @@ func (x *Receipt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Receipt.ProtoReflect.Descriptor instead.
 func (*Receipt) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{5}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Receipt) GetProced() bool {
@@ -577,7 +577,7 @@ type Uint64Receipt struct {
 func (x *Uint64Receipt) Reset() {
 	*x = Uint64Receipt{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[6]
+		mi := &file_proto_shenxian_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -590,7 +590,7 @@ func (x *Uint64Receipt) String() string {
 func (*Uint64Receipt) ProtoMessage() {}
 
 func (x *Uint64Receipt) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[6]
+	mi := &file_proto_shenxian_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -603,7 +603,7 @@ func (x *Uint64Receipt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Uint64Receipt.ProtoReflect.Descriptor instead.
 func (*Uint64Receipt) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{6}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Uint64Receipt) GetData() uint64 {
@@ -624,7 +624,7 @@ type IOStreamData struct {
 func (x *IOStreamData) Reset() {
 	*x = IOStreamData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[7]
+		mi := &file_proto_shenxian_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -637,7 +637,7 @@ func (x *IOStreamData) String() string {
 func (*IOStreamData) ProtoMessage() {}
 
 func (x *IOStreamData) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[7]
+	mi := &file_proto_shenxian_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -650,7 +650,7 @@ func (x *IOStreamData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IOStreamData.ProtoReflect.Descriptor instead.
 func (*IOStreamData) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{7}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *IOStreamData) GetData() []byte {
@@ -674,7 +674,7 @@ type GeoIP struct {
 func (x *GeoIP) Reset() {
 	*x = GeoIP{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[8]
+		mi := &file_proto_shenxian_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -687,7 +687,7 @@ func (x *GeoIP) String() string {
 func (*GeoIP) ProtoMessage() {}
 
 func (x *GeoIP) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[8]
+	mi := &file_proto_shenxian_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -700,7 +700,7 @@ func (x *GeoIP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GeoIP.ProtoReflect.Descriptor instead.
 func (*GeoIP) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{8}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GeoIP) GetUse6() bool {
@@ -743,7 +743,7 @@ type IP struct {
 func (x *IP) Reset() {
 	*x = IP{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_nezha_proto_msgTypes[9]
+		mi := &file_proto_shenxian_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -756,7 +756,7 @@ func (x *IP) String() string {
 func (*IP) ProtoMessage() {}
 
 func (x *IP) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_nezha_proto_msgTypes[9]
+	mi := &file_proto_shenxian_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -769,7 +769,7 @@ func (x *IP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IP.ProtoReflect.Descriptor instead.
 func (*IP) Descriptor() ([]byte, []int) {
-	return file_proto_nezha_proto_rawDescGZIP(), []int{9}
+	return file_proto_shenxian_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *IP) GetIpv4() string {
@@ -786,9 +786,9 @@ func (x *IP) GetIpv6() string {
 	return ""
 }
 
-var File_proto_nezha_proto protoreflect.FileDescriptor
+var File_proto_shenxian_proto protoreflect.FileDescriptor
 
-var file_proto_nezha_proto_rawDesc = []byte{
+var file_proto_shenxian_proto_rawDesc = []byte{
 	0x0a, 0x11, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6e, 0x65, 0x7a, 0x68, 0x61, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x12, 0x05, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xbf, 0x02, 0x0a, 0x04, 0x48,
 	0x6f, 0x73, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x18,
@@ -907,19 +907,19 @@ var file_proto_nezha_proto_rawDesc = []byte{
 }
 
 var (
-	file_proto_nezha_proto_rawDescOnce sync.Once
-	file_proto_nezha_proto_rawDescData = file_proto_nezha_proto_rawDesc
+	file_proto_shenxian_proto_rawDescOnce sync.Once
+	file_proto_shenxian_proto_rawDescData = file_proto_shenxian_proto_rawDesc
 )
 
-func file_proto_nezha_proto_rawDescGZIP() []byte {
-	file_proto_nezha_proto_rawDescOnce.Do(func() {
-		file_proto_nezha_proto_rawDescData = protoimpl.X.CompressGZIP(file_proto_nezha_proto_rawDescData)
+func file_proto_shenxian_proto_rawDescGZIP() []byte {
+	file_proto_shenxian_proto_rawDescOnce.Do(func() {
+		file_proto_shenxian_proto_rawDescData = protoimpl.X.CompressGZIP(file_proto_shenxian_proto_rawDescData)
 	})
-	return file_proto_nezha_proto_rawDescData
+	return file_proto_shenxian_proto_rawDescData
 }
 
-var file_proto_nezha_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_proto_nezha_proto_goTypes = []interface{}{
+var file_proto_shenxian_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_proto_shenxian_proto_goTypes = []interface{}{
 	(*Host)(nil),                    // 0: proto.Host
 	(*State)(nil),                   // 1: proto.State
 	(*State_SensorTemperature)(nil), // 2: proto.State_SensorTemperature
@@ -931,21 +931,21 @@ var file_proto_nezha_proto_goTypes = []interface{}{
 	(*GeoIP)(nil),                   // 8: proto.GeoIP
 	(*IP)(nil),                      // 9: proto.IP
 }
-var file_proto_nezha_proto_depIdxs = []int32{
+var file_proto_shenxian_proto_depIdxs = []int32{
 	2, // 0: proto.State.temperatures:type_name -> proto.State_SensorTemperature
 	9, // 1: proto.GeoIP.ip:type_name -> proto.IP
-	1, // 2: proto.NezhaService.ReportSystemState:input_type -> proto.State
-	0, // 3: proto.NezhaService.ReportSystemInfo:input_type -> proto.Host
-	4, // 4: proto.NezhaService.RequestTask:input_type -> proto.TaskResult
-	7, // 5: proto.NezhaService.IOStream:input_type -> proto.IOStreamData
-	8, // 6: proto.NezhaService.ReportGeoIP:input_type -> proto.GeoIP
-	0, // 7: proto.NezhaService.ReportSystemInfo2:input_type -> proto.Host
-	5, // 8: proto.NezhaService.ReportSystemState:output_type -> proto.Receipt
-	5, // 9: proto.NezhaService.ReportSystemInfo:output_type -> proto.Receipt
-	3, // 10: proto.NezhaService.RequestTask:output_type -> proto.Task
-	7, // 11: proto.NezhaService.IOStream:output_type -> proto.IOStreamData
-	8, // 12: proto.NezhaService.ReportGeoIP:output_type -> proto.GeoIP
-	6, // 13: proto.NezhaService.ReportSystemInfo2:output_type -> proto.Uint64Receipt
+	1, // 2: proto.ShenxianService.ReportSystemState:input_type -> proto.State
+	0, // 3: proto.ShenxianService.ReportSystemInfo:input_type -> proto.Host
+	4, // 4: proto.ShenxianService.RequestTask:input_type -> proto.TaskResult
+	7, // 5: proto.ShenxianService.IOStream:input_type -> proto.IOStreamData
+	8, // 6: proto.ShenxianService.ReportGeoIP:input_type -> proto.GeoIP
+	0, // 7: proto.ShenxianService.ReportSystemInfo2:input_type -> proto.Host
+	5, // 8: proto.ShenxianService.ReportSystemState:output_type -> proto.Receipt
+	5, // 9: proto.ShenxianService.ReportSystemInfo:output_type -> proto.Receipt
+	3, // 10: proto.ShenxianService.RequestTask:output_type -> proto.Task
+	7, // 11: proto.ShenxianService.IOStream:output_type -> proto.IOStreamData
+	8, // 12: proto.ShenxianService.ReportGeoIP:output_type -> proto.GeoIP
+	6, // 13: proto.ShenxianService.ReportSystemInfo2:output_type -> proto.Uint64Receipt
 	8, // [8:14] is the sub-list for method output_type
 	2, // [2:8] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -953,13 +953,13 @@ var file_proto_nezha_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_proto_nezha_proto_init() }
-func file_proto_nezha_proto_init() {
-	if File_proto_nezha_proto != nil {
+func init() { file_proto_shenxian_proto_init() }
+func file_proto_shenxian_proto_init() {
+	if File_proto_shenxian_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_nezha_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Host); i {
 			case 0:
 				return &v.state
@@ -971,7 +971,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*State); i {
 			case 0:
 				return &v.state
@@ -983,7 +983,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*State_SensorTemperature); i {
 			case 0:
 				return &v.state
@@ -995,7 +995,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Task); i {
 			case 0:
 				return &v.state
@@ -1007,7 +1007,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TaskResult); i {
 			case 0:
 				return &v.state
@@ -1019,7 +1019,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Receipt); i {
 			case 0:
 				return &v.state
@@ -1031,7 +1031,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Uint64Receipt); i {
 			case 0:
 				return &v.state
@@ -1043,7 +1043,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IOStreamData); i {
 			case 0:
 				return &v.state
@@ -1055,7 +1055,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GeoIP); i {
 			case 0:
 				return &v.state
@@ -1067,7 +1067,7 @@ func file_proto_nezha_proto_init() {
 				return nil
 			}
 		}
-		file_proto_nezha_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_shenxian_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IP); i {
 			case 0:
 				return &v.state
@@ -1084,18 +1084,18 @@ func file_proto_nezha_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_proto_nezha_proto_rawDesc,
+			RawDescriptor: file_proto_shenxian_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_nezha_proto_goTypes,
-		DependencyIndexes: file_proto_nezha_proto_depIdxs,
-		MessageInfos:      file_proto_nezha_proto_msgTypes,
+		GoTypes:           file_proto_shenxian_proto_goTypes,
+		DependencyIndexes: file_proto_shenxian_proto_depIdxs,
+		MessageInfos:      file_proto_shenxian_proto_msgTypes,
 	}.Build()
-	File_proto_nezha_proto = out.File
-	file_proto_nezha_proto_rawDesc = nil
-	file_proto_nezha_proto_goTypes = nil
-	file_proto_nezha_proto_depIdxs = nil
+	File_proto_shenxian_proto = out.File
+	file_proto_shenxian_proto_rawDesc = nil
+	file_proto_shenxian_proto_goTypes = nil
+	file_proto_shenxian_proto_depIdxs = nil
 }

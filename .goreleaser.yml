@@ -7,7 +7,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/nezhahq/agent/pkg/monitor.Version={{.Version}} -X main.arch={{.Arch}}
+      - -s -w -X github.com/shenxianhq/agent/pkg/monitor.Version={{.Version}} -X main.arch={{.Arch}}
     goos:
       - linux
       - windows
@@ -29,6 +29,6 @@ builds:
       - goos: windows
         goarch: arm
     main: ./cmd/agent
-    binary: nezha-agent
+    binary: shenxian-agent
 snapshot:
-  version_template: "nezha-agent"
+  version_template: "shenxian-agent"

@@ -11,7 +11,7 @@ import (
 	"github.com/shirou/gopsutil/v4/disk"
 	psnet "github.com/shirou/gopsutil/v4/net"
 
-	"github.com/nezhahq/agent/model"
+	"github.com/shenxianhq/agent/model"
 )
 
 // 修改Agent要监控的网卡与硬盘分区

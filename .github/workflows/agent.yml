@@ -87,14 +87,14 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: zip -jr dist/nezha-agent_${GOOS}_${GOARCH}.zip dist/*/*
+        run: zip -jr dist/shenxian-agent_${GOOS}_${GOARCH}.zip dist/*/*
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nezha-agent_${{ matrix.goos }}_${{ matrix.goarch }}
+          name: shenxian-agent_${{ matrix.goos }}_${{ matrix.goarch }}
           path: |
-            ./dist/nezha-agent_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+            ./dist/shenxian-agent_${{ matrix.goos }}_${{ matrix.goarch }}.zip
 
   release:
     runs-on: ubuntu-latest

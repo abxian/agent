@@ -1,5 +1,5 @@
 name: Bug Report
-description: File a bug report about nezha-agent.
+description: File a bug report about shenxian-agent.
 
 body:
   - type: input
@@ -12,7 +12,7 @@ body:
   - type: input
     attributes:
       label: Agent Version
-      description: Input the version of your nezha-agent here.
+      description: Input the version of your shenxian-agent here.
     validations:
       required: true
   - type: textarea
@@ -41,7 +41,7 @@ body:
     attributes:
       label: Validation
       options:
-        - label: I confirm this is a bug about nezha-agent.
+        - label: I confirm this is a bug about shenxian-agent.
           required: true
         - label: I have searched Issues and confirm this bug has been reported before.
           required: true

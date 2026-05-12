@@ -3,7 +3,7 @@ option go_package = "./proto";
 
 package proto;
 
-service NezhaService {
+service ShenxianService {
   rpc ReportSystemState(stream State) returns (stream Receipt) {}
   rpc ReportSystemInfo(Host) returns (Receipt) {}
   rpc RequestTask(stream TaskResult) returns (stream Task) {}

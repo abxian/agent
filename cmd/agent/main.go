@@ -32,17 +32,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
-	"github.com/nezhahq/agent/cmd/agent/commands"
-	"github.com/nezhahq/agent/model"
-	fm "github.com/nezhahq/agent/pkg/fm"
-	"github.com/nezhahq/agent/pkg/fsnotifyx"
-	"github.com/nezhahq/agent/pkg/logger"
-	"github.com/nezhahq/agent/pkg/monitor"
-	"github.com/nezhahq/agent/pkg/processgroup"
-	"github.com/nezhahq/agent/pkg/pty"
-	"github.com/nezhahq/agent/pkg/util"
-	utlsx "github.com/nezhahq/agent/pkg/utls"
-	pb "github.com/nezhahq/agent/proto"
+	"github.com/shenxianhq/agent/cmd/agent/commands"
+	"github.com/shenxianhq/agent/model"
+	fm "github.com/shenxianhq/agent/pkg/fm"
+	"github.com/shenxianhq/agent/pkg/fsnotifyx"
+	"github.com/shenxianhq/agent/pkg/logger"
+	"github.com/shenxianhq/agent/pkg/monitor"
+	"github.com/shenxianhq/agent/pkg/processgroup"
+	"github.com/shenxianhq/agent/pkg/pty"
+	"github.com/shenxianhq/agent/pkg/util"
+	utlsx "github.com/shenxianhq/agent/pkg/utls"
+	pb "github.com/shenxianhq/agent/proto"
 )
 
 var (
@@ -50,7 +50,7 @@ var (
 	arch                  string
 	executablePath        string
 	defaultConfigPath     = loadDefaultConfigPath()
-	client                pb.NezhaServiceClient
+	client                pb.ShenxianServiceClient
 	initialized           bool
 	agentConfig           model.AgentConfig
 	prevDashboardBootTime uint64 // 面板上次启动时间
@@ -85,7 +85,7 @@ const (
 	minUpdateInterval = 1440
 	maxUpdateInterval = 2880
 
-	binaryName = "nezha-agent"
+	binaryName = "shenxian-agent"
 )
 
 func setEnv() {
@@ -165,7 +165,7 @@ func preRun(configPath string) error {
 
 func main() {
 	app := &cli.App{
-		Usage:   "哪吒监控 Agent",
+		Usage:   "神仙监控 Agent",
 		Version: version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "config", Aliases: []string{"c"}, Usage: "配置文件路径"},
@@ -284,7 +284,7 @@ func run() {
 			retry()
 			continue
 		}
-		client = pb.NewNezhaServiceClient(conn)
+		client = pb.NewShenxianServiceClient(conn)
 		printf("Connection to %s established", agentConfig.Server)
 
 		timeOutCtx, cancel := context.WithTimeout(context.Background(), networkTimeOut)
@@ -304,7 +304,7 @@ func run() {
 		wCtx, wCancel := context.WithCancel(context.Background())
 
 		// 执行 Task
-		tasks, err := doWithTimeout(func() (pb.NezhaService_RequestTaskClient, error) {
+		tasks, err := doWithTimeout(func() (pb.ShenxianService_RequestTaskClient, error) {
 			return client.RequestTask(wCtx)
 		}, networkTimeOut)
 		if err != nil {
@@ -315,7 +315,7 @@ func run() {
 		}
 		go receiveTasksDaemon(tasks, wCancel)
 
-		reportState, err := doWithTimeout(func() (pb.NezhaService_ReportSystemStateClient, error) {
+		reportState, err := doWithTimeout(func() (pb.ShenxianService_ReportSystemStateClient, error) {
 			return client.ReportSystemState(wCtx)
 		}, networkTimeOut)
 		if err != nil {
@@ -354,7 +354,7 @@ func runService(action string, path string) {
 		Name:             name,
 		DisplayName:      filepath.Base(executablePath),
 		Arguments:        args,
-		Description:      "哪吒监控 Agent",
+		Description:      "神仙监控 Agent",
 		WorkingDirectory: filepath.Dir(executablePath),
 		Option:           winConfig,
 	}
@@ -371,7 +371,7 @@ func runService(action string, path string) {
 	}
 	prg.Service = s
 
-	serviceLogger, err := logger.NewNezhaServiceLogger(s, nil)
+	serviceLogger, err := logger.NewShenxianServiceLogger(s, nil)
 	if err != nil {
 		printf("获取 service logger 时出错: %+v", err)
 		logger.InitDefaultLogger(agentConfig.Debug, service.ConsoleLogger)
@@ -401,7 +401,7 @@ func runService(action string, path string) {
 	}
 }
 
-func receiveTasksDaemon(tasks pb.NezhaService_RequestTaskClient, cancel context.CancelFunc) {
+func receiveTasksDaemon(tasks pb.ShenxianService_RequestTaskClient, cancel context.CancelFunc) {
 	var task *pb.Task
 	var err error
 	for {
@@ -467,7 +467,7 @@ func doTask(task *pb.Task) *pb.TaskResult {
 }
 
 // reportStateDaemon 向server上报状态信息
-func reportStateDaemon(stateClient pb.NezhaService_ReportSystemStateClient, cancel context.CancelFunc) {
+func reportStateDaemon(stateClient pb.ShenxianService_ReportSystemStateClient, cancel context.CancelFunc) {
 	var err error
 	for {
 		lastReportHostInfo, lastReportIPInfo, err = reportState(stateClient, lastReportHostInfo, lastReportIPInfo)
@@ -480,7 +480,7 @@ func reportStateDaemon(stateClient pb.NezhaService_ReportSystemStateClient, canc
 	}
 }
 
-func reportState(statClient pb.NezhaService_ReportSystemStateClient, host, ip time.Time) (time.Time, time.Time, error) {
+func reportState(statClient pb.ShenxianService_ReportSystemStateClient, host, ip time.Time) (time.Time, time.Time, error) {
 	if statClient.Context().Err() != nil {
 		return host, ip, statClient.Context().Err()
 	}
@@ -653,7 +653,7 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 			printf("更新失败: %v", erru)
 			return
 		}
-		latest, err = updater.UpdateSelf(v, "naiba/nezha-agent")
+		latest, err = updater.UpdateSelf(v, "naiba/shenxian-agent")
 	case monitor.CachedCountryCode == "cn":
 		if rand.Intn(2) == 0 {
 			updater, erru := selfupdate.NewGiteeUpdater(selfupdate.Config{
@@ -672,7 +672,7 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 				printf("更新失败: %v", erru)
 				return
 			}
-			latest, err = updater.UpdateSelf(v, "naiba/nezha-agent")
+			latest, err = updater.UpdateSelf(v, "naiba/shenxian-agent")
 		}
 	default:
 		updater, erru := selfupdate.NewUpdater(selfupdate.Config{
@@ -682,7 +682,7 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 			printf("更新失败: %v", erru)
 			return
 		}
-		latest, err = updater.UpdateSelf(v, "nezhahq/agent")
+		latest, err = updater.UpdateSelf(v, "shenxianhq/agent")
 	}
 
 	if err != nil {
@@ -1121,7 +1121,7 @@ func lookupIP(hostOrIp string) (string, error) {
 	return hostOrIp, nil
 }
 
-func ioStreamKeepAlive(ctx context.Context, stream pb.NezhaService_IOStreamClient) {
+func ioStreamKeepAlive(ctx context.Context, stream pb.ShenxianService_IOStreamClient) {
 	ticker := time.Tick(30 * time.Second)
 
 	for {
