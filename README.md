@@ -4,14 +4,14 @@
 
 ## 本次改动
 
-- Go module 从 `github.com/nezhahq/agent` 改为 `github.com/shenxianhq/agent`。
+- Go module 改为 `github.com/shenxianhq/agent`。
 - Agent 二进制名从 `nezha-agent` 改为 `shenxian-agent`。
 - CLI 使用说明和系统服务描述改为“神仙监控 Agent”。
 - Proto 服务名从 `NezhaService` 改为 `ShenxianService`。
 - Proto 文件从 `proto/nezha.*` 改为 `proto/shenxian.*`。
 - 日志前缀改为 `SHENXIAN@...`。
 - 自更新默认 GitHub 仓库改为 `shenxianhq/agent`。
-- 安装仍兼容官方文档使用的环境变量：`NZ_SERVER`、`NZ_TLS`、`NZ_CLIENT_SECRET`、`NZ_UUID`。
+- Agent 配置环境变量前缀改为 `SX_`，例如 `SX_SERVER`、`SX_CLIENT_SECRET`。
 
 ## 公开下载
 
@@ -34,16 +34,18 @@ http://114.80.36.225:15667/sxjc/releases/agent/
 Linux/macOS：
 
 ```sh
-curl -L http://114.80.36.225:15667/sxjc/agent-install.sh -o agent.sh && chmod +x agent.sh && env NZ_SERVER=dashboard.example.com:8008 NZ_TLS=false NZ_CLIENT_SECRET=EXAMPLE NZ_UUID=your_server_uuid ./agent.sh
+curl -L http://114.80.36.225:15667/sxjc/agent-install.sh -o agent.sh && chmod +x agent.sh && env SX_SERVER=dashboard.example.com:8008 SX_TLS=false SX_CLIENT_SECRET=EXAMPLE SX_UUID=your_server_uuid ./agent.sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:NZ_SERVER="dashboard.example.com:8008";$env:NZ_TLS="false";$env:NZ_CLIENT_SECRET="EXAMPLE";$env:NZ_UUID="your_server_uuid";Invoke-WebRequest http://114.80.36.225:15667/sxjc/agent-install.ps1 -OutFile C:\install.ps1;powershell.exe C:\install.ps1
+$env:SX_SERVER="dashboard.example.com:8008";$env:SX_TLS="false";$env:SX_CLIENT_SECRET="EXAMPLE";$env:SX_UUID="your_server_uuid";Invoke-WebRequest http://114.80.36.225:15667/sxjc/agent-install.ps1 -OutFile C:\install.ps1;powershell.exe C:\install.ps1
 ```
 
-官方参考：https://nezha.wiki/guide/agent.html
+安装逻辑参考哪吒官方 Agent 文档：https://nezha.wiki/guide/agent.html
+
+神仙监控安装文档见 Dashboard 仓库的 `docs/INSTALL.md`。
 
 ## 编译验证
 
