@@ -11,7 +11,7 @@
 - Proto 文件从 `proto/nezha.*` 改为 `proto/shenxian.*`。
 - 日志前缀改为 `SHENXIAN@...`。
 - 自更新默认 GitHub 仓库改为 `shenxianhq/agent`。
-- Agent 配置环境变量前缀改为 `SX_`，例如 `SX_SERVER`、`SX_CLIENT_SECRET`。
+- Agent 安装脚本保持官方 `NZ_` 环境变量，例如 `NZ_SERVER`、`NZ_CLIENT_SECRET`；二进制仍兼容 `SX_` 变量。
 
 ## 公开下载
 
@@ -34,13 +34,13 @@ http://114.80.36.225:15667/sxjc/releases/agent/
 Linux/macOS：
 
 ```sh
-curl -L http://114.80.36.225:15667/sxjc/agent-install.sh -o agent.sh && chmod +x agent.sh && env SX_SERVER=dashboard.example.com:8008 SX_TLS=false SX_CLIENT_SECRET=EXAMPLE SX_UUID=your_server_uuid ./agent.sh
+curl -L http://114.80.36.225:15667/sxjc/agent-install.sh -o agent.sh && chmod +x agent.sh && env NZ_SERVER=dashboard.example.com:8008 NZ_TLS=false NZ_CLIENT_SECRET=EXAMPLE NZ_UUID=your_server_uuid ./agent.sh
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:SX_SERVER="dashboard.example.com:8008";$env:SX_TLS="false";$env:SX_CLIENT_SECRET="EXAMPLE";$env:SX_UUID="your_server_uuid";Invoke-WebRequest http://114.80.36.225:15667/sxjc/agent-install.ps1 -OutFile C:\install.ps1;powershell.exe C:\install.ps1
+$env:NZ_SERVER="dashboard.example.com:8008";$env:NZ_TLS="false";$env:NZ_CLIENT_SECRET="EXAMPLE";$env:NZ_UUID="your_server_uuid";Invoke-WebRequest http://114.80.36.225:15667/sxjc/agent-install.ps1 -OutFile C:\install.ps1;powershell.exe C:\install.ps1
 ```
 
 安装逻辑参考哪吒官方 Agent 文档：https://nezha.wiki/guide/agent.html
