@@ -53,7 +53,7 @@ $env:SX_SERVER="dashboard.example.com:8008";$env:SX_TLS="false";$env:SX_CLIENT_S
 
 ```sh
 go test -run '^$' ./...
-go build -o dist/shenxian-agent.exe ./cmd/agent
+go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=shenxian-agent -X main.arch=amd64" -o dist/shenxian-agent.exe ./cmd/agent
 ```
 
 完整测试中的 Cloudflare 探测用例依赖外部网站响应，可能因网络环境失败。
