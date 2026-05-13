@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	pb "github.com/shenxianhq/agent/proto"
@@ -42,17 +43,23 @@ func (t *Task) DoTask(data *pb.IOStreamData) {
 
 func (t *Task) listDir() {
 	dir := string(t.remoteData.Data[1:])
+	if dir == "" {
+		dir = defaultDir()
+	}
+	if runtime.GOOS == "windows" && dir == "/" {
+		dir = defaultDir()
+	}
 	var entries []fs.DirEntry
 	var err error
 	for {
 		entries, err = os.ReadDir(dir)
 		if err != nil {
-			usr, err := user.Current()
-			if err != nil {
+			nextDir := defaultDir()
+			if nextDir == dir {
 				t.taskClient.Send(&pb.IOStreamData{Data: CreateErr(err)})
 				return
 			}
-			dir = usr.HomeDir + string(filepath.Separator)
+			dir = nextDir
 			continue
 		}
 		break
@@ -64,6 +71,22 @@ func (t *Task) listDir() {
 		td = newBin
 	}
 	t.taskClient.Send(&pb.IOStreamData{Data: td})
+}
+
+func defaultDir() string {
+	if runtime.GOOS == "windows" {
+		if drive := os.Getenv("SystemDrive"); drive != "" {
+			return drive + string(filepath.Separator)
+		}
+		return `C:\`
+	}
+
+	usr, err := user.Current()
+	if err == nil && usr.HomeDir != "" {
+		return usr.HomeDir + string(filepath.Separator)
+	}
+
+	return string(filepath.Separator)
 }
 
 func (t *Task) download() {
