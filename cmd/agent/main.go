@@ -344,7 +344,7 @@ func runService(action string, path string) {
 	}
 
 	args := []string{"-c", path}
-	name := filepath.Base(executablePath)
+	name := binaryName
 	if path != defaultConfigPath && path != "" {
 		hex := util.MD5Sum(path)[:7]
 		name = fmt.Sprintf("%s-%s", name, hex)
@@ -352,7 +352,7 @@ func runService(action string, path string) {
 
 	svcConfig := &service.Config{
 		Name:             name,
-		DisplayName:      filepath.Base(executablePath),
+		DisplayName:      binaryName,
 		Arguments:        args,
 		Description:      "神仙监控 Agent",
 		WorkingDirectory: filepath.Dir(executablePath),
