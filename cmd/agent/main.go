@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	update "github.com/inconshreveable/go-update"
 	"github.com/nezhahq/go-github-selfupdate/selfupdate"
 	"github.com/nezhahq/service"
 	ping "github.com/prometheus-community/pro-bing"
@@ -724,29 +727,118 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 	}()
 
 	printf("检查更新: %v", v)
-	var latest *selfupdate.Release
-	// 神仙监控 fork：自更新统一从公开的 GitHub 仓库 abxian/agent 拉取 release。
-	// 该 fork 没有 Gitee/AtomGit 发布镜像，上游 slug（naibahq/agent 等）会拉到
-	// 错误的项目，因此原先按 Gitee/AtomGit/地区分流的分支统一收敛为单一 GitHub 源。
+
+	// 优先国内 dufs 源（速度快、稳定，不依赖 GitHub 连通性）。
+	// 任何失败都仅记录并回退，绝不影响 agent 以当前版本继续稳定运行；
+	// 只有在确实下载并原子替换成功后才结束进程，由服务管理器拉起新版本。
+	switch updated, derr := selfUpdateFromDufs(v); {
+	case derr != nil:
+		printf("dufs 自更新失败，回退 GitHub: %v", derr)
+	case updated:
+		printf("已通过 dufs 更新，正在结束进程")
+		exit = true
+		return
+	default:
+		printf("dufs 已是最新，尝试 GitHub 兜底源")
+	}
+
+	// GitHub 兜底：公开仓库 abxian/agent 的 release（与官方 nezhahq/agent 完全隔离）。
 	updater, erru := selfupdate.NewUpdater(selfupdate.Config{
 		BinaryName: binaryName,
 	})
 	if erru != nil {
-		printf("更新失败: %v", erru)
+		printf("GitHub 自更新初始化失败（保持当前版本运行）: %v", erru)
 		return
 	}
-	latest, err = updater.UpdateSelf(v, "abxian/agent")
-
+	latest, err := updater.UpdateSelf(v, "abxian/agent")
 	if err != nil {
-		printf("更新失败: %v", err)
+		printf("GitHub 自更新失败（保持当前版本运行）: %v", err)
 		return
 	}
-
-	if !latest.Version.Equals(v) {
-		printf("已经更新至: %v, 正在结束进程", latest.Version)
+	if latest != nil && !latest.Version.Equals(v) {
+		printf("已通过 GitHub 更新至: %v, 正在结束进程", latest.Version)
 		exit = true
 	}
 	return
+}
+
+// dufsAgentBase 是神仙监控国内分发源 agent 二进制目录。
+const dufsAgentBase = "http://114.80.36.225:15667/sxjc/releases/agent"
+
+// selfUpdateFromDufs 尝试从国内 dufs 源更新 agent 二进制。
+// 返回 (是否已替换为新版本, error)。任何网络/解析/下载/校验/替换失败都返回 error，
+// 由调用方回退到 GitHub。替换使用原子写入+失败自动回滚，确保即使更新出问题
+// 也绝不破坏正在运行的 agent（保持稳定连接，下个周期可重试）。
+func selfUpdateFromDufs(current semver.Version) (bool, error) {
+	client := &http.Client{Timeout: 90 * time.Second}
+
+	verBody, err := dufsGet(client, dufsAgentBase+"/version.txt", 1<<10)
+	if err != nil {
+		return false, fmt.Errorf("读取 version.txt: %w", err)
+	}
+	verStr := strings.TrimSpace(string(verBody))
+	latest, err := semver.Parse(verStr)
+	if err != nil {
+		return false, fmt.Errorf("解析 dufs 版本号 %q: %w", verStr, err)
+	}
+	if !latest.GT(current) {
+		return false, nil // 已是最新
+	}
+
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	name := fmt.Sprintf("%s-%s-%s%s", binaryName, runtime.GOOS, runtime.GOARCH, ext)
+
+	binData, err := dufsGet(client, dufsAgentBase+"/"+name, 256<<20)
+	if err != nil {
+		return false, fmt.Errorf("下载 %s: %w", name, err)
+	}
+
+	// 校验和（dufs 提供 checksums.txt 时）：拒绝坏包，避免替换成损坏的二进制。
+	if sumBody, serr := dufsGet(client, dufsAgentBase+"/checksums.txt", 1<<20); serr == nil {
+		if want := parseChecksum(sumBody, name); want != nil {
+			got := sha256.Sum256(binData)
+			if !bytes.Equal(got[:], want) {
+				return false, errors.New("dufs 二进制校验和不匹配，已放弃更新")
+			}
+		}
+	}
+
+	if err := update.Apply(bytes.NewReader(binData), update.Options{}); err != nil {
+		if rb := update.RollbackError(err); rb != nil {
+			return false, fmt.Errorf("替换失败且回滚失败: %v / rollback: %v", err, rb)
+		}
+		return false, fmt.Errorf("替换失败（已自动回滚，agent 不受影响）: %w", err)
+	}
+	printf("dufs 更新成功: %v -> %v", current, latest)
+	return true, nil
+}
+
+func dufsGet(client *http.Client, url string, limit int64) ([]byte, error) {
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, limit))
+}
+
+// parseChecksum 从 "sha256  filename" 文本中取出指定文件的校验和字节。
+func parseChecksum(data []byte, filename string) []byte {
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[len(fields)-1] == filename {
+			if b, err := hex.DecodeString(fields[0]); err == nil {
+				return b
+			}
+		}
+	}
+	return nil
 }
 
 func handleUpgradeTask(*pb.Task, *pb.TaskResult) {
