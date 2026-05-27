@@ -725,55 +725,17 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 
 	printf("检查更新: %v", v)
 	var latest *selfupdate.Release
-	switch {
-	case agentConfig.UseGiteeToUpgrade:
-		updater, erru := selfupdate.NewGiteeUpdater(selfupdate.Config{
-			BinaryName: binaryName,
-		})
-		if erru != nil {
-			printf("更新失败: %v", erru)
-			return
-		}
-		latest, err = updater.UpdateSelf(v, "naibahq/agent")
-	case agentConfig.UseAtomGitToUpgrade:
-		updater, erru := selfupdate.NewAtomGitUpdater(selfupdate.Config{
-			BinaryName: binaryName,
-		})
-		if erru != nil {
-			printf("更新失败: %v", erru)
-			return
-		}
-		latest, err = updater.UpdateSelf(v, "naiba/shenxian-agent")
-	case monitor.CachedCountryCode == "cn":
-		if rand.Intn(2) == 0 {
-			updater, erru := selfupdate.NewGiteeUpdater(selfupdate.Config{
-				BinaryName: binaryName,
-			})
-			if erru != nil {
-				printf("更新失败: %v", erru)
-				return
-			}
-			latest, err = updater.UpdateSelf(v, "naibahq/agent")
-		} else {
-			updater, erru := selfupdate.NewAtomGitUpdater(selfupdate.Config{
-				BinaryName: binaryName,
-			})
-			if erru != nil {
-				printf("更新失败: %v", erru)
-				return
-			}
-			latest, err = updater.UpdateSelf(v, "naiba/shenxian-agent")
-		}
-	default:
-		updater, erru := selfupdate.NewUpdater(selfupdate.Config{
-			BinaryName: binaryName,
-		})
-		if erru != nil {
-			printf("更新失败: %v", erru)
-			return
-		}
-		latest, err = updater.UpdateSelf(v, "shenxianhq/agent")
+	// 神仙监控 fork：自更新统一从公开的 GitHub 仓库 abxian/agent 拉取 release。
+	// 该 fork 没有 Gitee/AtomGit 发布镜像，上游 slug（naibahq/agent 等）会拉到
+	// 错误的项目，因此原先按 Gitee/AtomGit/地区分流的分支统一收敛为单一 GitHub 源。
+	updater, erru := selfupdate.NewUpdater(selfupdate.Config{
+		BinaryName: binaryName,
+	})
+	if erru != nil {
+		printf("更新失败: %v", erru)
+		return
 	}
+	latest, err = updater.UpdateSelf(v, "abxian/agent")
 
 	if err != nil {
 		printf("更新失败: %v", err)
