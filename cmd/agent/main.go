@@ -806,14 +806,72 @@ func selfUpdateFromDufs(current semver.Version) (bool, error) {
 		}
 	}
 
-	if err := update.Apply(bytes.NewReader(binData), update.Options{}); err != nil {
+	// 预自检：先在临时文件上验证新二进制能正常启动（-v 可解析、版本不低于预期），
+	// 从源头杜绝"装上去才崩"导致服务反复重启。
+	tmpBin := filepath.Join(os.TempDir(), fmt.Sprintf("%s-new-%d%s", binaryName, os.Getpid(), ext))
+	if werr := os.WriteFile(tmpBin, binData, 0o755); werr != nil {
+		return false, fmt.Errorf("写临时文件: %w", werr)
+	}
+	defer os.Remove(tmpBin)
+	if cerr := healthCheckBinary(tmpBin, latest); cerr != nil {
+		return false, fmt.Errorf("新版本预自检失败，放弃更新（保持当前版本）: %w", cerr)
+	}
+
+	// 原子替换，并保留旧二进制为 .old 作为回滚兜底。
+	oldPath := executablePath + ".old"
+	if err := update.Apply(bytes.NewReader(binData), update.Options{OldSavePath: oldPath}); err != nil {
 		if rb := update.RollbackError(err); rb != nil {
 			return false, fmt.Errorf("替换失败且回滚失败: %v / rollback: %v", err, rb)
 		}
 		return false, fmt.Errorf("替换失败（已自动回滚，agent 不受影响）: %w", err)
 	}
-	printf("dufs 更新成功: %v -> %v", current, latest)
+
+	// 替换后自检：再确认已安装的二进制能正常启动；失败则用 .old 自动回滚兜底，
+	// 确保服务管理器永远不会拉起一个起不来的版本。
+	if cerr := healthCheckBinary(executablePath, latest); cerr != nil {
+		if rerr := restoreBackup(oldPath, executablePath); rerr != nil {
+			return false, fmt.Errorf("安装后自检失败且 .old 回滚也失败（需人工介入，备份在 %s）: 自检=%v 回滚=%v", oldPath, cerr, rerr)
+		}
+		return false, fmt.Errorf("安装后自检失败，已从 .old 回滚到旧版本: %w", cerr)
+	}
+	_ = os.Remove(oldPath) // 自检通过，清理备份
+	printf("dufs 更新成功并通过自检: %v -> %v", current, latest)
 	return true, nil
+}
+
+// healthCheckBinary 运行 `bin -v`，要求 15s 内正常退出并输出可解析、且不低于 want 的版本号。
+// 这是"能否正常启动"的轻量代理：能跑通 -v 说明二进制完整、架构匹配、可正常初始化。
+func healthCheckBinary(bin string, want semver.Version) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, bin, "-v").Output()
+	if err != nil {
+		return fmt.Errorf("运行 -v 失败: %w", err)
+	}
+	fields := strings.Fields(strings.TrimSpace(string(out)))
+	if len(fields) == 0 {
+		return errors.New("版本输出为空")
+	}
+	got, perr := semver.Parse(fields[len(fields)-1])
+	if perr != nil {
+		return fmt.Errorf("解析版本输出 %q 失败: %w", string(out), perr)
+	}
+	if got.LT(want) {
+		return fmt.Errorf("自检版本 %v 低于预期 %v", got, want)
+	}
+	return nil
+}
+
+// restoreBackup 用 .old 备份原子地恢复旧二进制（自检失败时的兜底）。
+func restoreBackup(oldPath, target string) error {
+	data, err := os.ReadFile(oldPath)
+	if err != nil {
+		return fmt.Errorf("读取备份 %s: %w", oldPath, err)
+	}
+	if err := update.Apply(bytes.NewReader(data), update.Options{TargetPath: target}); err != nil {
+		return fmt.Errorf("写回旧二进制: %w", err)
+	}
+	return nil
 }
 
 func dufsGet(client *http.Client, url string, limit int64) ([]byte, error) {
