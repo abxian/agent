@@ -742,6 +742,12 @@ func doSelfUpdate(useLocalVersion bool) (exit bool) {
 		printf("dufs 已是最新，尝试 GitHub 兜底源")
 	}
 
+	// macOS：GitHub release 的二进制未经签名，装上会被内核 Killed:9（dufs 路径会本地
+	// ad-hoc 签名，GitHub 这条没有签名钩子）。因此 darwin 只走 dufs，不回退 GitHub。
+	if runtime.GOOS == "darwin" {
+		return
+	}
+
 	// GitHub 兜底：公开仓库 abxian/agent 的 release（与官方 nezhahq/agent 完全隔离）。
 	updater, erru := selfupdate.NewUpdater(selfupdate.Config{
 		BinaryName: binaryName,
@@ -813,6 +819,9 @@ func selfUpdateFromDufs(current semver.Version) (bool, error) {
 		return false, fmt.Errorf("写临时文件: %w", werr)
 	}
 	defer os.Remove(tmpBin)
+	if serr := codesignAdhoc(tmpBin); serr != nil {
+		return false, fmt.Errorf("新版本签名失败（macOS），放弃更新（保持当前版本）: %w", serr)
+	}
 	if cerr := healthCheckBinary(tmpBin, latest); cerr != nil {
 		return false, fmt.Errorf("新版本预自检失败，放弃更新（保持当前版本）: %w", cerr)
 	}
@@ -824,6 +833,15 @@ func selfUpdateFromDufs(current semver.Version) (bool, error) {
 			return false, fmt.Errorf("替换失败且回滚失败: %v / rollback: %v", err, rb)
 		}
 		return false, fmt.Errorf("替换失败（已自动回滚，agent 不受影响）: %w", err)
+	}
+
+	// macOS：替换后的二进制未签名会被内核 Killed:9，ad-hoc 重新签名（非 darwin 为空操作）；
+	// 失败则用 .old 回滚兜底。
+	if serr := codesignAdhoc(executablePath); serr != nil {
+		if rerr := restoreBackup(oldPath, executablePath); rerr != nil {
+			return false, fmt.Errorf("签名失败且 .old 回滚也失败（需人工介入，备份在 %s）: 签名=%v 回滚=%v", oldPath, serr, rerr)
+		}
+		return false, fmt.Errorf("macOS 签名失败，已从 .old 回滚: %w", serr)
 	}
 
 	// 替换后自检：再确认已安装的二进制能正常启动；失败则用 .old 自动回滚兜底，
@@ -858,6 +876,19 @@ func healthCheckBinary(bin string, want semver.Version) error {
 	}
 	if got.LT(want) {
 		return fmt.Errorf("自检版本 %v 低于预期 %v", got, want)
+	}
+	return nil
+}
+
+// codesignAdhoc 在 macOS 上对二进制做 ad-hoc 本地签名（非 darwin 为空操作）。
+// Apple Silicon 要求 arm64 二进制带有效签名，跨平台编译的二进制未签名会被内核 Killed:9。
+func codesignAdhoc(path string) error {
+	if runtime.GOOS != "darwin" {
+		return nil
+	}
+	_ = exec.Command("xattr", "-cr", path).Run() // 清隔离属性，忽略错误
+	if out, err := exec.Command("codesign", "--force", "--sign", "-", path).CombinedOutput(); err != nil {
+		return fmt.Errorf("codesign 失败（需安装 Xcode 命令行工具 xcode-select --install）: %v: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
