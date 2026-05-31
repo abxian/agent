@@ -471,9 +471,23 @@ func runService(action string, path string) {
 	}
 }
 
+// newSerialTaskResultSender wraps the RequestTask stream's Send with a mutex.
+// dispatchAgentTask runs most tasks in their own goroutine, and they all share
+// one stream; gRPC Go forbids concurrent SendMsg, so every result must funnel
+// through this serializer or overlapping MCP results corrupt the stream.
+func newSerialTaskResultSender(send func(*pb.TaskResult) error) func(*pb.TaskResult) error {
+	var mu sync.Mutex
+	return func(r *pb.TaskResult) error {
+		mu.Lock()
+		defer mu.Unlock()
+		return send(r)
+	}
+}
+
 func receiveTasksDaemon(tasks pb.ShenxianService_RequestTaskClient, cancel context.CancelFunc) {
 	var task *pb.Task
 	var err error
+	send := newSerialTaskResultSender(tasks.Send)
 	for {
 		task, err = doWithTimeout(func() (*pb.Task, error) {
 			return tasks.Recv()
@@ -483,7 +497,7 @@ func receiveTasksDaemon(tasks pb.ShenxianService_RequestTaskClient, cancel conte
 			cancel()
 			return
 		}
-		dispatchAgentTask(task, tasks.Send, cancel)
+		dispatchAgentTask(task, send, cancel)
 	}
 }
 
@@ -551,6 +565,19 @@ func doTask(task *pb.Task) *pb.TaskResult {
 		handleApplyConfigTask(task, &result)
 	case model.TaskTypeServerTransferApply:
 		handleServerTransferApplyTask(task, &result)
+	case model.TaskTypeExec:
+		handleExecTask(task, &result)
+	case model.TaskTypeFsList:
+		handleFsListTask(task, &result)
+	case model.TaskTypeFsRead:
+		handleFsReadTask(task, &result)
+	case model.TaskTypeFsWrite:
+		handleFsWriteTask(task, &result)
+	case model.TaskTypeFsDelete:
+		handleFsDeleteTask(task, &result)
+	case model.TaskTypeFsTransfer:
+		handleFsTransferTask(task)
+		return nil
 	case model.TaskTypeKeepalive:
 	default:
 		printf("不支持的任务: %v", task)
