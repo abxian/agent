@@ -302,6 +302,9 @@ func run() {
 			c := loadCredentials()
 			return c.ClientSecret, c.ClientUUID
 		},
+		RequireTLS: func() bool {
+			return agentConfig.TLS
+		},
 	}
 
 	// 定时检查更新
