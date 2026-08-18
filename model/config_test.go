@@ -8,6 +8,28 @@ import (
 	"testing"
 )
 
+func TestReadFromStorePersistsGeneratedUUIDWithoutFile(t *testing.T) {
+	initial, err := json.Marshal(AgentConfig{Server: "embedded.example:443", ClientSecret: "secret", TLS: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stored []byte
+	var loaded AgentConfig
+	if err := loaded.ReadFromStore(initial, func(value *AgentConfig) error {
+		var marshalErr error
+		stored, marshalErr = json.Marshal(value)
+		return marshalErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if loaded.UUID == "" || len(stored) == 0 {
+		t.Fatal("generated UUID was not persisted through the custom store")
+	}
+	if loaded.filePath != "" {
+		t.Fatalf("custom store must not set a file path: %q", loaded.filePath)
+	}
+}
+
 func TestJsonUnmarshalConfig(t *testing.T) {
 	var conf AgentConfig
 	conf.Debug = true

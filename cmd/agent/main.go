@@ -197,9 +197,6 @@ func preRun(configPath string) error {
 	if configPath == "" {
 		configPath = defaultConfigPath
 	}
-	restoreBootstrap, _ := applyStandaloneBootstrap(configPath)
-	defer restoreBootstrap()
-
 	// windows环境处理
 	if runtime.GOOS == "windows" {
 		hostArch, err := host.KernelArch()
@@ -219,8 +216,14 @@ func preRun(configPath string) error {
 		}
 	}
 
-	if err := agentConfig.Read(configPath); err != nil {
-		return fmt.Errorf("init config failed: %v", err)
+	var configErr error
+	if standaloneMode != "" {
+		configErr = readStandaloneConfig()
+	} else {
+		configErr = agentConfig.Read(configPath)
+	}
+	if configErr != nil {
+		return fmt.Errorf("init config failed: %v", configErr)
 	}
 
 	monitor.InitConfig(&agentConfig)
@@ -235,6 +238,13 @@ func main() {
 		log.Fatalf("request administrator privileges: %v", err)
 	}
 	if relaunched {
+		return
+	}
+	prepared, err := prepareStandaloneExecutable()
+	if err != nil {
+		log.Fatalf("prepare standalone executable: %v", err)
+	}
+	if prepared {
 		return
 	}
 

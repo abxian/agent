@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -47,10 +48,12 @@ type AgentConfig struct {
 
 	k        *koanf.Koanf `json:"-"`
 	filePath string       `json:"-"`
+	saveFunc func(*AgentConfig) error
 }
 
 // Read 从给定的文件目录加载配置文件
 func (c *AgentConfig) Read(path string) error {
+	c.saveFunc = nil
 	c.k = koanf.New("")
 	c.filePath = path
 	saveOnce := sync.OnceValue(c.Save)
@@ -88,7 +91,37 @@ func (c *AgentConfig) Read(path string) error {
 	return ValidateConfig(c, false)
 }
 
+// ReadFromStore loads configuration from a non-file persistence backend.
+func (c *AgentConfig) ReadFromStore(data []byte, saveFunc func(*AgentConfig) error) error {
+	*c = AgentConfig{saveFunc: saveFunc}
+	dirty := len(data) == 0
+	if len(data) != 0 {
+		if err := json.Unmarshal(data, c); err != nil {
+			return fmt.Errorf("decode stored config: %w", err)
+		}
+		c.saveFunc = saveFunc
+	}
+	if c.UUID == "" {
+		value, err := uuid.GenerateUUID()
+		if err != nil {
+			return fmt.Errorf("generate UUID failed: %v", err)
+		}
+		c.UUID = value
+		dirty = true
+	}
+	if err := ValidateConfig(c, false); err != nil {
+		return err
+	}
+	if dirty {
+		return c.Save()
+	}
+	return nil
+}
+
 func (c *AgentConfig) Save() error {
+	if c.saveFunc != nil {
+		return c.saveFunc(c)
+	}
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return err
