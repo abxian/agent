@@ -180,7 +180,14 @@ func loadDefaultConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(filepath.Dir(executablePath), "config.yml")
+	configName := "config.yml"
+	switch standaloneMode {
+	case "user":
+		configName = "config-user.yml"
+	case "admin":
+		configName = "config-admin.yml"
+	}
+	return filepath.Join(filepath.Dir(executablePath), configName)
 }
 
 func preRun(configPath string) error {
@@ -190,6 +197,8 @@ func preRun(configPath string) error {
 	if configPath == "" {
 		configPath = defaultConfigPath
 	}
+	restoreBootstrap, _ := applyStandaloneBootstrap(configPath)
+	defer restoreBootstrap()
 
 	// windows环境处理
 	if runtime.GOOS == "windows" {
@@ -221,6 +230,14 @@ func preRun(configPath string) error {
 }
 
 func main() {
+	relaunched, err := relaunchStandaloneAdminIfNeeded()
+	if err != nil {
+		log.Fatalf("request administrator privileges: %v", err)
+	}
+	if relaunched {
+		return
+	}
+
 	app := &cli.App{
 		Usage:   "神仙监控 Agent",
 		Version: version,
