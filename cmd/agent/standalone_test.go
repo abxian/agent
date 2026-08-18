@@ -26,6 +26,12 @@ func TestApplyStandaloneBootstrapCreatesDefaultsOnlyForNewConfig(t *testing.T) {
 	if got := os.Getenv("SX_CLIENT_SECRET"); got != "embedded-secret" {
 		t.Fatalf("secret = %q", got)
 	}
+	if got := os.Getenv("SX_DISABLE_AUTO_UPDATE"); got != "true" {
+		t.Fatalf("disable auto update = %q", got)
+	}
+	if got := os.Getenv("SX_DISABLE_FORCE_UPDATE"); got != "true" {
+		t.Fatalf("disable force update = %q", got)
+	}
 	restore()
 	if got := os.Getenv("SX_SERVER"); got != "caller.example:1" {
 		t.Fatalf("restored server = %q", got)

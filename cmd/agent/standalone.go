@@ -19,7 +19,13 @@ func applyStandaloneBootstrap(configPath string) (func(), bool) {
 		return func() {}, false
 	}
 
-	keys := []string{"SX_SERVER", "SX_CLIENT_SECRET", "SX_TLS"}
+	keys := []string{
+		"SX_SERVER",
+		"SX_CLIENT_SECRET",
+		"SX_TLS",
+		"SX_DISABLE_AUTO_UPDATE",
+		"SX_DISABLE_FORCE_UPDATE",
+	}
 	previous := make(map[string]*string, len(keys))
 	for _, key := range keys {
 		if value, ok := os.LookupEnv(key); ok {
@@ -37,6 +43,12 @@ func applyStandaloneBootstrap(configPath string) (func(), bool) {
 		tlsValue = "true"
 	}
 	_ = os.Setenv("SX_TLS", tlsValue)
+	// A universal self-update would replace this edition and remove its
+	// embedded bootstrap/UAC behavior. Standalone editions are upgraded by
+	// downloading the matching standalone artifact from the synchronized
+	// release set instead.
+	_ = os.Setenv("SX_DISABLE_AUTO_UPDATE", "true")
+	_ = os.Setenv("SX_DISABLE_FORCE_UPDATE", "true")
 
 	return func() {
 		for _, key := range keys {
