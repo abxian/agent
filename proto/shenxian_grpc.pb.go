@@ -39,15 +39,15 @@ type ShenxianServiceClient interface {
 	ReportSystemInfo2(ctx context.Context, in *Host, opts ...grpc.CallOption) (*Uint64Receipt, error)
 }
 
-type shenxianServiceClient struct {
+type nezhaServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
 func NewShenxianServiceClient(cc grpc.ClientConnInterface) ShenxianServiceClient {
-	return &shenxianServiceClient{cc}
+	return &nezhaServiceClient{cc}
 }
 
-func (c *shenxianServiceClient) ReportSystemState(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[State, Receipt], error) {
+func (c *nezhaServiceClient) ReportSystemState(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[State, Receipt], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ShenxianService_ServiceDesc.Streams[0], ShenxianService_ReportSystemState_FullMethodName, cOpts...)
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *shenxianServiceClient) ReportSystemState(ctx context.Context, opts ...g
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ShenxianService_ReportSystemStateClient = grpc.BidiStreamingClient[State, Receipt]
 
-func (c *shenxianServiceClient) ReportSystemInfo(ctx context.Context, in *Host, opts ...grpc.CallOption) (*Receipt, error) {
+func (c *nezhaServiceClient) ReportSystemInfo(ctx context.Context, in *Host, opts ...grpc.CallOption) (*Receipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Receipt)
 	err := c.cc.Invoke(ctx, ShenxianService_ReportSystemInfo_FullMethodName, in, out, cOpts...)
@@ -70,7 +70,7 @@ func (c *shenxianServiceClient) ReportSystemInfo(ctx context.Context, in *Host, 
 	return out, nil
 }
 
-func (c *shenxianServiceClient) RequestTask(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TaskResult, Task], error) {
+func (c *nezhaServiceClient) RequestTask(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[TaskResult, Task], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ShenxianService_ServiceDesc.Streams[1], ShenxianService_RequestTask_FullMethodName, cOpts...)
 	if err != nil {
@@ -83,7 +83,7 @@ func (c *shenxianServiceClient) RequestTask(ctx context.Context, opts ...grpc.Ca
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ShenxianService_RequestTaskClient = grpc.BidiStreamingClient[TaskResult, Task]
 
-func (c *shenxianServiceClient) IOStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[IOStreamData, IOStreamData], error) {
+func (c *nezhaServiceClient) IOStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[IOStreamData, IOStreamData], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ShenxianService_ServiceDesc.Streams[2], ShenxianService_IOStream_FullMethodName, cOpts...)
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *shenxianServiceClient) IOStream(ctx context.Context, opts ...grpc.CallO
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ShenxianService_IOStreamClient = grpc.BidiStreamingClient[IOStreamData, IOStreamData]
 
-func (c *shenxianServiceClient) ReportGeoIP(ctx context.Context, in *GeoIP, opts ...grpc.CallOption) (*GeoIP, error) {
+func (c *nezhaServiceClient) ReportGeoIP(ctx context.Context, in *GeoIP, opts ...grpc.CallOption) (*GeoIP, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GeoIP)
 	err := c.cc.Invoke(ctx, ShenxianService_ReportGeoIP_FullMethodName, in, out, cOpts...)
@@ -106,7 +106,7 @@ func (c *shenxianServiceClient) ReportGeoIP(ctx context.Context, in *GeoIP, opts
 	return out, nil
 }
 
-func (c *shenxianServiceClient) ReportSystemInfo2(ctx context.Context, in *Host, opts ...grpc.CallOption) (*Uint64Receipt, error) {
+func (c *nezhaServiceClient) ReportSystemInfo2(ctx context.Context, in *Host, opts ...grpc.CallOption) (*Uint64Receipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Uint64Receipt)
 	err := c.cc.Invoke(ctx, ShenxianService_ReportSystemInfo2_FullMethodName, in, out, cOpts...)

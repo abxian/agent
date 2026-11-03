@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -49,6 +52,15 @@ type AgentConfig struct {
 	k        *koanf.Koanf `json:"-"`
 	filePath string       `json:"-"`
 	saveFunc func(*AgentConfig) error
+}
+
+func (c AgentConfig) Clone() AgentConfig {
+	cloned := c
+	cloned.HardDrivePartitionAllowlist = slices.Clone(c.HardDrivePartitionAllowlist)
+	cloned.NICAllowlist = maps.Clone(c.NICAllowlist)
+	cloned.DNS = slices.Clone(c.DNS)
+	cloned.CustomIPApi = slices.Clone(c.CustomIPApi)
+	return cloned
 }
 
 // Read 从给定的文件目录加载配置文件
@@ -156,6 +168,13 @@ func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
 
 	if c.ReportDelay < 1 || c.ReportDelay > 4 {
 		return errors.New("report-delay ranges from 1-4")
+	}
+
+	for _, apiURL := range c.CustomIPApi {
+		parsed, err := url.Parse(apiURL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return fmt.Errorf("custom_ip_api entry %q must use http or https scheme", apiURL)
+		}
 	}
 
 	if !isRemoteEdit {

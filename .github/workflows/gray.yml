@@ -1,0 +1,50 @@
+name: Gray candidate verification
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        default: '2.4.0-sx.1'
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-11-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - run: go test ./...
+      - name: Race checks
+        if: runner.os == 'Linux'
+        run: go test -race ./cmd/agent ./model ./pkg/monitor ./pkg/pty ./pkg/fm
+      - name: Build native candidate
+        shell: bash
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p dist
+          go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=${CANDIDATE_VERSION}" -o dist/shenxian-agent${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/agent
+          if [ '${{ runner.os }}' = Windows ]; then ./dist/shenxian-agent.exe -v; else ./dist/shenxian-agent -v; fi
+      - name: Windows standalone user/admin smoke
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          foreach ($mode in @('user','admin')) {
+            go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=$env:CANDIDATE_VERSION -X main.standaloneMode=$mode" -o "dist/shenxian-agent-$mode.exe" ./cmd/agent
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          Get-FileHash dist/*.exe -Algorithm SHA256 | Format-Table -AutoSize
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gray-${{ runner.os }}-${{ runner.arch }}
+          path: dist/*
+          retention-days: 14

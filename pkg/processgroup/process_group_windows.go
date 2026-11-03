@@ -4,12 +4,16 @@ package processgroup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
+// errProcessExitGroupClosed guards AddProcess on a closed group, mirroring the unix side.
+var errProcessExitGroupClosed = errors.New("process exit group is closed")
 
 type ProcessExitGroup struct {
 	cmds      []*exec.Cmd
@@ -46,7 +50,10 @@ func NewProcessExitGroup() (*ProcessExitGroup, error) {
 }
 
 func NewCommand(args string) *exec.Cmd {
-	cmd := exec.Command("cmd")
+	// TaskTypeCommand is a deliberate remote command execution feature.
+	// The caller is authenticated via TLS + client-secret; shell expansion via
+	// cmd.exe /c is intentional so operators can use pipes and built-ins.
+	cmd := exec.Command("cmd") // #nosec G204 -- intentional shell execution for TaskTypeCommand
 	cmd.SysProcAttr = &windows.SysProcAttr{
 		CmdLine:       fmt.Sprintf("/c %s", args),
 		CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
@@ -75,15 +82,25 @@ func NewExecCommand(name string, args ...string) *exec.Cmd {
 }
 
 func (g *ProcessExitGroup) AddProcess(cmd *exec.Cmd) error {
+	if g.closed {
+		return errProcessExitGroupClosed
+	}
+
 	proc, err := windows.OpenProcess(windows.PROCESS_TERMINATE|windows.PROCESS_SET_QUOTA|windows.PROCESS_SET_INFORMATION, false, uint32(cmd.Process.Pid))
 	if err != nil {
 		return err
 	}
 
+	// 只有 AssignProcessToJobObject 成功后才登记 cmd/proc。assign 失败就立刻
+	// CloseHandle(proc) 并返回，避免留下半注册状态和泄漏的 OpenProcess 句柄。
+	if err := windows.AssignProcessToJobObject(g.jobHandle, proc); err != nil {
+		windows.CloseHandle(proc)
+		return err
+	}
+
 	g.procs = append(g.procs, proc)
 	g.cmds = append(g.cmds, cmd)
-
-	return windows.AssignProcessToJobObject(g.jobHandle, proc)
+	return nil
 }
 
 // ReapDescendants terminates the JobObject so any descendants the leader left
