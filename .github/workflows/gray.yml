@@ -1,5 +1,7 @@
 name: Gray candidate verification
 on:
+  push:
+    branches: ["codex/agent177-gray-*"]
   workflow_dispatch:
     inputs:
       version:
@@ -27,7 +29,7 @@ jobs:
       - name: Build native candidate
         shell: bash
         env:
-          CANDIDATE_VERSION: ${{ inputs.version }}
+          CANDIDATE_VERSION: ${{ inputs.version || '2.4.0-sx.1' }}
         run: |
           mkdir -p dist
           go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=${CANDIDATE_VERSION}" -o dist/shenxian-agent${{ runner.os == 'Windows' && '.exe' || '' }} ./cmd/agent
@@ -36,7 +38,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          CANDIDATE_VERSION: ${{ inputs.version }}
+          CANDIDATE_VERSION: ${{ inputs.version || '2.4.0-sx.1' }}
         run: |
           foreach ($mode in @('user','admin')) {
             go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=$env:CANDIDATE_VERSION -X main.standaloneMode=$mode" -o "dist/shenxian-agent-$mode.exe" ./cmd/agent
