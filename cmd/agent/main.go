@@ -47,7 +47,7 @@ import (
 
 var (
 	version               = monitor.Version // 来自于 GoReleaser 的版本号
-	arch                  string
+	arch                  = runtime.GOARCH
 	executablePath        string
 	defaultConfigPath     = loadDefaultConfigPath()
 	client                pb.ShenxianServiceClient
