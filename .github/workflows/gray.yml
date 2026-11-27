@@ -150,10 +150,12 @@ jobs:
             }
             if ($legacy) {
               $legacyService = Get-CimInstance Win32_Service -Filter "Name='shenxian-agent'"
-              if ($legacyService.StartMode -ne 'Disabled' -or $legacyService.State -ne 'Stopped' -or
-                  $first -notmatch $fixtureUuid -or $first -notmatch '(?m)^client_secret: synthetic-fixture$' -or
-                  $first -notmatch '(?m)^gpu: true$') {
-                throw 'Migration did not preserve identity or disable the legacy service'
+              if ($legacyService.StartMode -ne 'Disabled' -or $legacyService.State -ne 'Stopped') {
+                throw "Legacy service mode/state: $($legacyService.StartMode)/$($legacyService.State)"
+              }
+              $settings = $first -split '\r?\n'
+              foreach ($line in "uuid: $fixtureUuid", 'client_secret: synthetic-fixture', 'gpu: true') {
+                if ($line -notin $settings) { throw 'Migration did not preserve a legacy setting' }
               }
               Write-Host 'Legacy migration passed'
             } else {
