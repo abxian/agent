@@ -104,11 +104,19 @@ jobs:
             if ([IO.File]::ReadAllText($config) -ne $first -or (Get-Service shenxian-agent.exe).Status -ne 'Running') {
               throw 'Upgrade did not preserve settings or service state.'
             }
-            & $exe -v
-            if ($LASTEXITCODE -ne 0) { throw 'Windows service executable did not report its version.' }
+            Start-Sleep -Seconds 25
+            $version = & $exe -v
+            if ($LASTEXITCODE -ne 0 -or $version -notmatch '2\.4\.0-domain\.3$') {
+              throw "Unexpected installed Windows service version: $version"
+            }
+            Write-Host $version
+            if ($first -notmatch 'disable_auto_update: true' -or $first -notmatch 'disable_force_update: true') {
+              throw 'The preview needs both legacy binary update paths disabled.'
+            }
           } finally {
             if (Get-Service shenxian-agent.exe -ErrorAction SilentlyContinue) {
               Stop-Service shenxian-agent.exe
-              & $exe service uninstall
+              sc.exe delete shenxian-agent.exe
+              if ($LASTEXITCODE -ne 0) { throw 'Smoke-test Windows service cleanup failed.' }
             }
           }
