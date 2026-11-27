@@ -45,6 +45,18 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
           Get-FileHash dist/*.exe -Algorithm SHA256 | Format-Table -AutoSize
+      - name: Build Windows service installers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version || '2.4.0-sx.1' }}
+        run: |
+          $env:CGO_ENABLED = '0'
+          foreach ($arch in @('amd64','arm64','386')) {
+            $env:GOARCH = $arch
+            go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agent/pkg/monitor.Version=$env:CANDIDATE_VERSION" -o "dist/shenxian-agent-windows-$arch.exe" ./cmd/agent
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: gray-${{ runner.os }}-${{ runner.arch }}
