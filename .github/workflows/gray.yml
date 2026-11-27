@@ -222,3 +222,4 @@ jobs:
             }
           }
           Write-Host 'Hidden child launched, quiet output and success/failure exit codes verified.'
+          exit 0
