@@ -23,9 +23,10 @@ import (
 type AgentConfig struct {
 	Debug bool `koanf:"debug" json:"debug"`
 
-	Server       string `koanf:"server" json:"server"`               // 服务器地址
-	ClientSecret string `koanf:"client_secret" json:"client_secret"` // 客户端密钥
-	UUID         string `koanf:"uuid" json:"uuid"`
+	Server             string `koanf:"server" json:"server"` // 服务器地址
+	ServerDiscoveryURL string `koanf:"server_discovery_url" json:"server_discovery_url,omitempty"`
+	ClientSecret       string `koanf:"client_secret" json:"client_secret"` // 客户端密钥
+	UUID               string `koanf:"uuid" json:"uuid"`
 
 	HardDrivePartitionAllowlist []string        `koanf:"hard_drive_partition_allowlist" json:"hard_drive_partition_allowlist,omitempty"`
 	NICAllowlist                map[string]bool `koanf:"nic_allowlist" json:"nic_allowlist,omitempty"`
@@ -156,6 +157,16 @@ func (c *AgentConfig) Save() error {
 }
 
 func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
+	if c.ServerDiscoveryURL != "" {
+		source, err := url.Parse(c.ServerDiscoveryURL)
+		if err != nil || source.Scheme != "https" || source.Hostname() == "" || source.User != nil || source.Fragment != "" {
+			return errors.New("server_discovery_url must be an HTTPS URL without user information or fragment")
+		}
+		if !c.TLS || c.InsecureTLS {
+			return errors.New("server_discovery_url requires tls=true and insecure_tls=false")
+		}
+	}
+
 	if c.ReportDelay == 0 {
 		c.ReportDelay = 3
 	}

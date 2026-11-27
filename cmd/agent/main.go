@@ -281,47 +281,60 @@ func run() {
 		}()
 	}
 
-	var err error
-	var dashboardBootTimeReceipt *pb.Uint64Receipt
+	discovery := newDashboardDiscovery(loadRuntimeConfig().ServerDiscoveryURL)
+	var refreshDiscovery <-chan time.Time
+	if discovery.source != "" {
+		ticker := time.NewTicker(dashboardDiscoveryInterval)
+		defer ticker.Stop()
+		refreshDiscovery = ticker.C
+	}
+	var prepared dashboardConnection
+	var preparedConfig *model.AgentConfig
 	var conn *grpc.ClientConn
 
-	retry := func() {
+	closeConnection := func() {
 		initialized = false
 		if conn != nil {
 			conn.Close()
+			conn = nil
 		}
+	}
+	retry := func() {
+		closeConnection()
 		time.Sleep(delayWhenError)
 		println("Try to reconnect ...")
 	}
 
 	for {
-		connectionConfig := loadConnectionConfigTuple()
-		conn, err = grpc.NewClient(connectionConfig.Server, connectionConfig.dialOptions()...)
-		if err != nil {
-			printf("与面板建立连接失败: %v", err)
-			retry()
-			continue
+		config := loadRuntimeConfig()
+		connectionConfig := connectionConfigTupleFrom(config)
+		dialOptions := connectionConfig.dialOptions()
+		connection := prepared
+		prepared = dashboardConnection{}
+		if connection.conn == nil || config != preparedConfig {
+			if connection.conn != nil {
+				connection.conn.Close()
+			}
+			discovery.refresh(time.Now())
+			var err error
+			connection, err = discovery.connect(connectionConfig.Server, dialOptions, monitor.GetHost(config).PB())
+			if err != nil {
+				printf("与面板建立连接或上报系统信息失败: %v", err)
+				retry()
+				continue
+			}
 		}
-		client = pb.NewShenxianServiceClient(conn)
-		printf("Connection to %s established", connectionConfig.Server)
+		conn, client = connection.conn, connection.client
+		discovery.lastGood = connection.target
+		printf("Connection to %s established", connection.target)
 		session := newConnectionSession(context.Background())
-		reconnectSession := func(cause error) {
+		reconnectSession := func(cause error, reconnect func()) {
 			graceContext, cancelGrace := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancelGrace()
-			reconnectAfterSessionExit(session, sessionShutdown{graceContext: graceContext, cause: cause}, retry)
+			reconnectAfterSessionExit(session, sessionShutdown{graceContext: graceContext, cause: cause}, reconnect)
 		}
 
-		timeOutCtx, cancel := context.WithTimeout(session.streamContext, 10*time.Second)
-		config := loadRuntimeConfig()
-		dashboardBootTimeReceipt, err = client.ReportSystemInfo2(timeOutCtx, monitor.GetHost(config).PB())
-		if err != nil {
-			printf("上报系统信息失败: %v", err)
-			cancel()
-			reconnectSession(err)
-			continue
-		}
-		cancel()
-
+		dashboardBootTimeReceipt := connection.receipt
 		geoipReported = geoipReported && prevDashboardBootTime > 0 && dashboardBootTimeReceipt.GetData() == prevDashboardBootTime
 		prevDashboardBootTime = dashboardBootTimeReceipt.GetData()
 		initialized = true
@@ -330,7 +343,7 @@ func run() {
 		tasks, err := client.RequestTask(session.requestTaskContext)
 		if err != nil {
 			printf("请求任务失败: %v", err)
-			reconnectSession(err)
+			reconnectSession(err, retry)
 			continue
 		}
 		requestSession := session.bindRequestTask(tasks)
@@ -339,24 +352,42 @@ func run() {
 		reportSession, err := openReportState(session, client)
 		if err != nil {
 			printf("上报状态信息失败: %v", err)
-			reconnectSession(err)
+			reconnectSession(err, retry)
 			continue
 		}
 		session.startDaemon(func() { reportStateDaemon(reportSession, session.signalExit) })
 
 		shutdownCause := error(context.Canceled)
-		select {
-		case <-reloadSigChan:
-			println("Reloading...")
-		case <-session.streamContext.Done():
-			println("Worker exit...")
-			shutdownCause = context.Cause(session.streamContext)
-		case <-session.exitContext.Done():
-			println("Worker exit...")
-			shutdownCause = context.Cause(session.exitContext)
+		reconnect := retry
+	waitForReconnect:
+		for {
+			select {
+			case <-reloadSigChan:
+				println("Reloading...")
+				break waitForReconnect
+			case <-session.streamContext.Done():
+				println("Worker exit...")
+				shutdownCause = context.Cause(session.streamContext)
+				break waitForReconnect
+			case <-session.exitContext.Done():
+				println("Worker exit...")
+				shutdownCause = context.Cause(session.exitContext)
+				break waitForReconnect
+			case <-refreshDiscovery:
+				candidate, err := discovery.replacement(connection.target, dialOptions, monitor.GetHost(config).PB())
+				if err != nil {
+					printf("新面板地址验证失败，保留当前连接: %v", err)
+					continue
+				}
+				if candidate.conn != nil {
+					prepared, preparedConfig = candidate, config
+					reconnect = closeConnection
+					break waitForReconnect
+				}
+			}
 		}
 
-		reconnectSession(shutdownCause)
+		reconnectSession(shutdownCause, reconnect)
 	}
 }
 
@@ -1170,6 +1201,10 @@ func parseApplyConfigLocked(config *model.AgentConfig, task *pb.Task, result *pb
 	if err := json.Unmarshal([]byte(task.GetData()), &tmpConfig); err != nil {
 		printf("Parsing Config failed: %v", err)
 		result.Data = err.Error()
+		return model.AgentConfig{}, false
+	}
+	if tmpConfig.ServerDiscoveryURL != config.ServerDiscoveryURL {
+		result.Data = "server_discovery_url can only be configured locally"
 		return model.AgentConfig{}, false
 	}
 	if err := model.ValidateConfig(&tmpConfig, true); err != nil {

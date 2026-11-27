@@ -20,7 +20,10 @@ type connectionConfigTuple struct {
 func loadConnectionConfigTuple() connectionConfigTuple {
 	// Load once: transport and per-RPC credentials must belong to one generation,
 	// otherwise a plaintext connection could receive a newly rotated secret.
-	config := loadRuntimeConfig()
+	return connectionConfigTupleFrom(loadRuntimeConfig())
+}
+
+func connectionConfigTupleFrom(config *model.AgentConfig) connectionConfigTuple {
 	return connectionConfigTuple{
 		Server:      config.Server,
 		TLS:         config.TLS,
