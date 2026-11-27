@@ -50,14 +50,16 @@ $env:SX_SERVER="dashboard.example.com:8008";$env:SX_TLS="false";$env:SX_CLIENT_S
 ## 面板域名自动切换
 
 在支持此功能的 Agent 本地配置中保留现有 UUID、密钥和 `server`，并加入
-`server_discovery_url`（或环境变量 `SX_SERVER_DISCOVERY_URL`）。启用时面板需要
+`server_discovery_url`（或环境变量 `SX_SERVER_DISCOVERY_URL`），也可加入
+`server_discovery_fallback_url`（`SX_SERVER_DISCOVERY_FALLBACK_URL`）。启用时面板需要
 有效的 TLS 证书，Agent 配置为 `tls: true`、`insecure_tls: false`。
 
 ```yaml
 server: panel-old.example.net:5443
 tls: true
 insecure_tls: false
-server_discovery_url: https://discovery.example.org/shenxian-agent.json
+server_discovery_url: https://discovery.example.org/v1/shenxian-panel.json
+server_discovery_fallback_url: https://raw.githubusercontent.com/OWNER/REPO/main/manifests/shenxian-panel.json
 ```
 
 将 JSON 清单放在与面板域名独立、由管理员控制写权限的 HTTPS 静态托管入口。
@@ -65,8 +67,12 @@ server_discovery_url: https://discovery.example.org/shenxian-agent.json
 使用不跳转的直达链接，并建议由托管端返回 `Cache-Control: no-store`。
 
 ```json
-{"server":"panel-new.example.net:5443"}
+{"server":"panel-new.example.net:5443","revision":1795740000000000}
 ```
+
+两源并行读取，任一源可用即可发现。两份内容更新不同步时，优先使用较大的 `revision`，
+同版本优先配置中的首选源。旧单源清单仍可省略该字段，两个镜像应发布字节一致的清单。
+需要回滚时，把旧地址作为更高的版本重新发布。
 
 先准备新域名的 DNS、有效证书和 gRPC 反代，确认它指向使用相同设备身份和认证数据的面板，
 再更新清单。Agent 启动时读取清单，运行中约每分钟刷新一次。新地址须通过 TLS 和
@@ -75,7 +81,7 @@ server_discovery_url: https://discovery.example.org/shenxian-agent.json
 因此长期迁移稳定后宜把本地 `server` 更新到仍受控的后备地址。
 
 已离线且仍运行旧版的 Agent 需要通过独立管理入口升级并配置一次，或先通过 DNS 恢复
-旧入口。关闭功能时移除 `server_discovery_url` 或对应环境变量，然后重启 Agent。
+旧入口。关闭功能时移除两项发现源设置或对应环境变量，然后重启 Agent。
 
 ## 编译验证
 

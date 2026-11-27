@@ -139,3 +139,41 @@ func startDiscoveryTestDashboard(t *testing.T, boot uint64, secret, uuid string)
 	t.Cleanup(s.Close)
 	return s
 }
+
+func TestDashboardDiscoveryMirrors(t *testing.T) {
+	var nas, github atomic.Value
+	newSource := func(manifest *atomic.Value) *httptest.Server {
+		s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if value := manifest.Load().(string); value != "" {
+				fmt.Fprint(w, value)
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+		}))
+		t.Cleanup(s.Close)
+		return s
+	}
+	nas.Store("")
+	github.Store("")
+	primary, fallback := newSource(&nas), newSource(&github)
+	resolver := newDashboardDiscovery(primary.URL, fallback.URL)
+	resolver.http.Transport = primary.Client().Transport
+	check := func(nasManifest, gitManifest, expected string) {
+		t.Helper()
+		nas.Store(nasManifest)
+		github.Store(gitManifest)
+		resolver.nextRefresh = time.Time{}
+		resolver.refresh(time.Now())
+		if resolver.preferred != expected {
+			t.Fatalf("preferred = %q, want %q", resolver.preferred, expected)
+		}
+	}
+	first := `{"server":"first.example:5443","revision":1}`
+	second := `{"server":"second.example:5443","revision":2}`
+	third := `{"server":"third.example:5443","revision":3}`
+	check("", first, "first.example:5443")
+	check(first, second, "second.example:5443")
+	check(third, "", "third.example:5443")
+	check("", second, "third.example:5443")
+	check("", "", "third.example:5443")
+}

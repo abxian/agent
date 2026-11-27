@@ -281,9 +281,10 @@ func run() {
 		}()
 	}
 
-	discovery := newDashboardDiscovery(loadRuntimeConfig().ServerDiscoveryURL)
+	startup := loadRuntimeConfig()
+	discovery := newDashboardDiscovery(startup.ServerDiscoveryURL, startup.ServerDiscoveryFallbackURL)
 	var refreshDiscovery <-chan time.Time
-	if discovery.source != "" {
+	if len(discovery.sources) != 0 {
 		ticker := time.NewTicker(dashboardDiscoveryInterval)
 		defer ticker.Stop()
 		refreshDiscovery = ticker.C
@@ -1203,8 +1204,8 @@ func parseApplyConfigLocked(config *model.AgentConfig, task *pb.Task, result *pb
 		result.Data = err.Error()
 		return model.AgentConfig{}, false
 	}
-	if tmpConfig.ServerDiscoveryURL != config.ServerDiscoveryURL {
-		result.Data = "server_discovery_url can only be configured locally"
+	if tmpConfig.ServerDiscoveryURL != config.ServerDiscoveryURL || tmpConfig.ServerDiscoveryFallbackURL != config.ServerDiscoveryFallbackURL {
+		result.Data = "dashboard discovery sources can only be configured locally"
 		return model.AgentConfig{}, false
 	}
 	if err := model.ValidateConfig(&tmpConfig, true); err != nil {

@@ -25,16 +25,23 @@ const (
 var dashboardHostnameLabel = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
 
 type dashboardDiscovery struct {
-	source      string
+	sources     []string
 	http        *http.Client
 	nextRefresh time.Time
 	preferred   string
+	revision    uint64
 	lastGood    string
 }
 
-func newDashboardDiscovery(source string) *dashboardDiscovery {
+func newDashboardDiscovery(sources ...string) *dashboardDiscovery {
+	unique := make([]string, 0, len(sources))
+	for _, source := range sources {
+		if source != "" && !slices.Contains(unique, source) {
+			unique = append(unique, source)
+		}
+	}
 	return &dashboardDiscovery{
-		source: source,
+		sources: unique,
 		http: &http.Client{
 			Timeout: 5 * time.Second,
 			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
@@ -45,43 +52,70 @@ func newDashboardDiscovery(source string) *dashboardDiscovery {
 }
 
 func (d *dashboardDiscovery) refresh(now time.Time) {
-	if d.source == "" || now.Before(d.nextRefresh) {
+	if len(d.sources) == 0 || now.Before(d.nextRefresh) {
 		return
 	}
 	d.nextRefresh = now.Add(dashboardDiscoveryInterval)
-	target, err := d.fetch()
-	if err != nil {
+	type result struct {
+		manifest dashboardManifest
+		index    int
+	}
+	replies := make(chan result, len(d.sources))
+	for index, source := range d.sources {
+		go func() {
+			replies <- result{manifest: d.fetch(source), index: index}
+		}()
+	}
+	best := result{index: len(d.sources)}
+	for range d.sources {
+		reply := <-replies
+		if reply.manifest.Server != "" && (best.manifest.Server == "" ||
+			reply.manifest.Revision > best.manifest.Revision ||
+			(reply.manifest.Revision == best.manifest.Revision && reply.index < best.index)) {
+			best = reply
+		}
+	}
+	if best.manifest.Server == "" {
 		println("面板地址清单读取失败，将继续使用已知地址")
 		return
 	}
-	d.preferred = target
+	if best.manifest.Revision < d.revision {
+		return
+	}
+	if d.revision > 0 && best.manifest.Revision == d.revision && best.manifest.Server != d.preferred {
+		return
+	}
+	d.preferred, d.revision = best.manifest.Server, best.manifest.Revision
 }
 
-func (d *dashboardDiscovery) fetch() (string, error) {
-	req, err := http.NewRequest(http.MethodGet, d.source, nil)
+type dashboardManifest struct {
+	Server   string `json:"server"`
+	Revision uint64 `json:"revision"`
+}
+
+func (d *dashboardDiscovery) fetch(source string) dashboardManifest {
+	req, err := http.NewRequest(http.MethodGet, source, nil)
 	if err != nil {
-		return "", err
+		return dashboardManifest{}
 	}
 	req.Header.Set("Cache-Control", "no-cache")
 	resp, err := d.http.Do(req)
 	if err != nil {
-		return "", err
+		return dashboardManifest{}
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New("unexpected dashboard discovery HTTP status")
+		return dashboardManifest{}
 	}
 	payload, err := io.ReadAll(io.LimitReader(resp.Body, dashboardDiscoveryMaxBody+1))
 	if err != nil {
-		return "", err
+		return dashboardManifest{}
 	}
-	var manifest struct {
-		Server string `json:"server"`
-	}
+	var manifest dashboardManifest
 	if len(payload) > dashboardDiscoveryMaxBody || json.Unmarshal(payload, &manifest) != nil || !validDashboardTarget(manifest.Server) {
-		return "", errors.New("invalid dashboard discovery manifest")
+		return dashboardManifest{}
 	}
-	return manifest.Server, nil
+	return manifest
 }
 
 func validDashboardTarget(target string) bool {
@@ -109,7 +143,7 @@ func validDashboardTarget(target string) bool {
 }
 
 func (d *dashboardDiscovery) targets(configured string) []string {
-	if d.source == "" {
+	if len(d.sources) == 0 {
 		return []string{configured}
 	}
 	targets := make([]string, 0, 3)
