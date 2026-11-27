@@ -94,3 +94,17 @@ go build -trimpath -buildvcs=false -ldflags="-s -w -X github.com/shenxianhq/agen
 
 完整测试中的 Cloudflare 探测用例依赖外部网站响应，可能因网络环境失败。
 隔离分支构建可在 GitHub Actions 手动运行 `Gray candidate verification`，只生成临时工件。
+
+### 神仙面板正式发现入口
+
+面板的双源引导配置可用于经过灰度验证的新版 Agent。沿用设备原有 UUID 和认证密钥。
+
+```yaml
+server: panel.52nm.de:5443
+tls: true
+insecure_tls: false
+server_discovery_url: https://domains.52nm.de:5443/v1/shenxian-panel.json
+server_discovery_fallback_url: https://raw.githubusercontent.com/abxian/domain-config/main/manifests/shenxian-panel.json
+```
+
+启动后以认证上报成功作为上线依据。连接本机或另一个独立面板的 Agent 保留其原配置。
