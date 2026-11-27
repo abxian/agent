@@ -8,10 +8,15 @@ on:
         type: string
         required: true
         default: '2.4.0-sx.1'
+      installer_sha256:
+        description: 'Expected SHA-256 for an isolated run of the NAS Windows installer'
+        type: string
+        required: false
 permissions:
   contents: read
 jobs:
   verify:
+    if: inputs.installer_sha256 == ''
     strategy:
       fail-fast: false
       matrix:
@@ -62,3 +67,48 @@ jobs:
           name: gray-${{ runner.os }}-${{ runner.arch }}
           path: dist/*
           retention-days: 14
+
+  nas-installer:
+    if: inputs.installer_sha256 != ''
+    runs-on: windows-11-arm
+    timeout-minutes: 10
+    steps:
+      - name: Verify NAS download and run isolated Windows service installation
+        shell: powershell
+        env:
+          EXPECTED_INSTALLER_SHA256: ${{ inputs.installer_sha256 }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://shell.52nm.de:5443/scripts/shenxian-agent/domain-v3/agent-install.ps1'
+          $source = Join-Path $env:RUNNER_TEMP 'panel-agent-installer.ps1'
+          Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $source
+          if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne $env:EXPECTED_INSTALLER_SHA256) {
+            throw 'Downloaded installer does not match the reviewed source.'
+          }
+          $script = [IO.File]::ReadAllText($source)
+          $script = $script.Replace('https://domains.52nm.de:5443/v1/shenxian-panel.json', 'https://127.0.0.1:9/nas.json')
+          $script = $script.Replace('https://raw.githubusercontent.com/abxian/domain-config/main/manifests/shenxian-panel.json', 'https://127.0.0.1:9/mirror.json')
+          $env:SX_SERVER = '127.0.0.1:9'
+          $env:SX_AGENT_PATH = Join-Path $env:ProgramFiles 'Shenxian Installer Smoke'
+          $env:SX_CLIENT_SECRET = 'synthetic-fixture'
+          $config = Join-Path $env:SX_AGENT_PATH 'config.yml'
+          $exe = Join-Path $env:SX_AGENT_PATH 'shenxian-agent.exe'
+          try {
+            Invoke-Expression $script
+            $first = [IO.File]::ReadAllText($config)
+            if ($first -notmatch 'uuid:' -or $first -notmatch '127\.0\.0\.1:9/mirror\.json') {
+              throw 'Initial installation did not persist device identity and discovery sources.'
+            }
+            Remove-Item Env:SX_CLIENT_SECRET
+            Invoke-Expression $script
+            if ([IO.File]::ReadAllText($config) -ne $first -or (Get-Service shenxian-agent.exe).Status -ne 'Running') {
+              throw 'Upgrade did not preserve settings or service state.'
+            }
+            & $exe -v
+            if ($LASTEXITCODE -ne 0) { throw 'Windows service executable did not report its version.' }
+          } finally {
+            if (Get-Service shenxian-agent.exe -ErrorAction SilentlyContinue) {
+              Stop-Service shenxian-agent.exe
+              & $exe service uninstall
+            }
+          }
