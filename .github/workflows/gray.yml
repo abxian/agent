@@ -12,6 +12,15 @@ on:
         description: 'Expected SHA-256 for an isolated run of the NAS Windows installer'
         type: string
         required: false
+      legacy_migration:
+        description: 'Exercise the migration from the original Windows service'
+        type: boolean
+        required: false
+        default: false
+      installer_source:
+        description: 'Base64-encoded candidate installer for the isolated Windows test'
+        type: string
+        required: false
 permissions:
   contents: read
 jobs:
@@ -76,12 +85,18 @@ jobs:
       - name: Verify NAS download and run isolated Windows service installation
         shell: powershell
         env:
+          LEGACY_MIGRATION: ${{ inputs.legacy_migration }}
+          INSTALLER_SOURCE: ${{ inputs.installer_source }}
           EXPECTED_INSTALLER_SHA256: ${{ inputs.installer_sha256 }}
         run: |
           $ErrorActionPreference = 'Stop'
           $url = 'https://shell.52nm.de:5443/scripts/shenxian-agent/domain-v3/agent-install.ps1'
           $source = Join-Path $env:RUNNER_TEMP 'panel-agent-installer.ps1'
-          Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $source
+          if ($env:INSTALLER_SOURCE) {
+            [IO.File]::WriteAllBytes($source, [Convert]::FromBase64String($env:INSTALLER_SOURCE))
+          } else {
+            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $source
+          }
           if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne $env:EXPECTED_INSTALLER_SHA256) {
             throw 'Downloaded installer does not match the reviewed source.'
           }
@@ -94,12 +109,56 @@ jobs:
           $config = Join-Path $env:SX_AGENT_PATH 'config.yml'
           $exe = Join-Path $env:SX_AGENT_PATH 'shenxian-agent.exe'
           try {
+            $legacy = $env:LEGACY_MIGRATION -eq 'true'
+            if ($legacy) {
+              New-Item -ItemType Directory -Path $env:SX_AGENT_PATH | Out-Null
+              Invoke-WebRequest -Uri 'https://shell.52nm.de:5443/files/shenxian-agent/shenxian-agent-windows-arm64.exe' -UseBasicParsing -OutFile $exe
+              $oldHash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+              if ($oldHash -ne 'b1844d4f3462d7e3909ee9d6e87fbbc6cdadbe392c12064866cc332a2e53e4c9') {
+                throw 'Unexpected legacy package'
+              }
+              $fixtureUuid = 'fe76ca65-7b72-4276-8ab7-c0c07ae911d4'
+              $legacyConfig = @(
+                'server: 127.0.0.1:9', 'tls: true', 'disable_auto_update: true', 'disable_force_update: true',
+                "uuid: $fixtureUuid", 'client_secret: synthetic-fixture', 'gpu: true'
+              ) -join "`n"
+              [IO.File]::WriteAllText($config, $legacyConfig)
+              Remove-Item Env:SX_CLIENT_SECRET
+              & $exe service install
+              if ($LASTEXITCODE -ne 0) { throw 'Legacy registration failed' }
+              Start-Service shenxian-agent
+              $failure = $script.Replace('Start-Service -Name $serviceName', "throw 'synthetic migration startup error'")
+              try {
+                Invoke-Expression $failure
+                throw 'Expected a synthetic migration failure'
+              } catch {
+                if ($_.Exception.Message -ne 'synthetic migration startup error') { throw }
+              }
+              if ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -ne $oldHash -or
+                  [IO.File]::ReadAllText($config) -ne $legacyConfig -or
+                  (Get-Service shenxian-agent).Status -ne 'Running' -or
+                  (Get-CimInstance Win32_Service -Filter "Name='shenxian-agent'").StartMode -ne 'Auto' -or
+                  (Get-Service shenxian-agent.exe -ErrorAction SilentlyContinue)) {
+                throw 'Failed migration did not restore the original service and files'
+              }
+              Write-Host 'Legacy rollback passed'
+            }
             Invoke-Expression $script
             $first = [IO.File]::ReadAllText($config)
             if ($first -notmatch 'uuid:' -or $first -notmatch '127\.0\.0\.1:9/mirror\.json') {
               throw 'Initial installation did not persist device identity and discovery sources.'
             }
-            Remove-Item Env:SX_CLIENT_SECRET
+            if ($legacy) {
+              $legacyService = Get-CimInstance Win32_Service -Filter "Name='shenxian-agent'"
+              if ($legacyService.StartMode -ne 'Disabled' -or $legacyService.State -ne 'Stopped' -or
+                  $first -notmatch $fixtureUuid -or $first -notmatch '(?m)^client_secret: synthetic-fixture$' -or
+                  $first -notmatch '(?m)^gpu: true$') {
+                throw 'Migration did not preserve identity or disable the legacy service'
+              }
+              Write-Host 'Legacy migration passed'
+            } else {
+              Remove-Item Env:SX_CLIENT_SECRET
+            }
             Invoke-Expression $script
             if ([IO.File]::ReadAllText($config) -ne $first -or (Get-Service shenxian-agent.exe).Status -ne 'Running') {
               throw 'Upgrade did not preserve settings or service state.'
@@ -118,5 +177,10 @@ jobs:
               Stop-Service shenxian-agent.exe
               sc.exe delete shenxian-agent.exe
               if ($LASTEXITCODE -ne 0) { throw 'Smoke-test Windows service cleanup failed.' }
+            }
+            if (Get-Service shenxian-agent -ErrorAction SilentlyContinue) {
+              Stop-Service shenxian-agent
+              sc.exe delete shenxian-agent
+              if ($LASTEXITCODE -ne 0) { throw 'Legacy smoke-test service cleanup failed.' }
             }
           }
